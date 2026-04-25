@@ -1,65 +1,109 @@
-import Image from "next/image";
+import React from 'react';
+import Sidebar from "./components/sidebar";
 
-export default function Home() {
+// --- Reusable Stat Card Component ---
+const StatCard = ({ title, value, trend, color }: { title: string, value: string, trend: string, color: string }) => (
+  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+    <div className="text-sm font-medium text-slate-500 mb-1">{title}</div>
+    <div className="text-3xl font-bold text-slate-900 mb-2">{value}</div>
+    <div className={`text-sm font-medium ${color}`}>↑ {trend}</div>
+  </div>
+);
+
+export default function DashboardPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="p-8 bg-slate-50 min-h-screen">
+      
+      {/* Header Section */}
+      <header className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-sm text-slate-500">CarePulse / Overview</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="flex gap-4">
+          <input 
+            type="search" 
+            placeholder="Search patients, records..." 
+            className="px-4 py-2 border border-slate-300 rounded-lg w-64 focus:ring-2 focus:ring-emerald-500 outline-none"
+          />
+          <button className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-emerald-700">
+            + New Patient
+          </button>
         </div>
-      </main>
+      </header>
+
+      {/* KPI Grid */}
+      <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <StatCard title="TOTAL PATIENTS" value="2,481" trend="12% this month" color="text-emerald-600" />
+        <StatCard title="TODAY'S APPOINTMENTS" value="37" trend="8 from yesterday" color="text-emerald-600" />
+        <StatCard title="LOW STOCK ALERTS" value="6" trend="Needs reorder" color="text-amber-600" />
+        <StatCard title="REVENUE (MONTH)" value="$84k" trend="23% vs last" color="text-emerald-600" />
+      </section>
+
+      {/* Main Content Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left Column: Spans 2 */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Patient Visits Chart */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <h2 className="font-semibold text-slate-900 mb-4">Patient Visits (This Week)</h2>
+            <div className="h-48 flex items-end gap-2">
+              {[40, 30, 45, 60, 80, 50, 30].map((h, i) => (
+                <div key={i} className="flex-1 bg-emerald-100 rounded-t-sm hover:bg-emerald-500 transition-colors" style={{ height: `${h}%` }}></div>
+              ))}
+            </div>
+          </div>
+
+          {/* Appointments Table */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex justify-between mb-4">
+              <h2 className="font-semibold text-slate-900">Today's Appointments</h2>
+              <button className="text-emerald-600 text-sm">View all →</button>
+            </div>
+            <table className="w-full text-left text-sm">
+              <tbody className="divide-y divide-slate-100">
+                {['08:30 Sarah Mitchell', '09:15 James Horowitz', '10:00 Priya Nair'].map((item, i) => (
+                  <tr key={i} className="py-4">
+                    <td className="py-3 font-medium text-slate-700">{item.split(' ')[0]}</td>
+                    <td className="py-3 font-semibold">{item.split(' ').slice(1).join(' ')}</td>
+                    <td className="py-3 text-right"><span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded">Confirmed</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Right Column: Spans 1 */}
+        <div className="space-y-6">
+          {/* Quick Stats */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <h2 className="font-semibold text-slate-900 mb-4">Quick Stats</h2>
+            <ul className="space-y-3 text-sm">
+              <li className="flex justify-between"><span>Inpatients today</span> <span className="font-bold">14</span></li>
+              <li className="flex justify-between"><span>Surgeries scheduled</span> <span className="font-bold">3</span></li>
+              <li className="flex justify-between"><span>Prescriptions issued</span> <span className="font-bold">89</span></li>
+            </ul>
+          </div>
+
+          {/* Inventory Alerts */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <h2 className="font-semibold text-slate-900 mb-4">Inventory Alerts</h2>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-1"><span>Amoxicillin 500mg</span> <span>12 left</span></div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 w-[60%]"></div></div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1"><span>Insulin (Rapid)</span> <span>8 left</span></div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-red-500 w-[20%]"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
     </div>
   );
 }

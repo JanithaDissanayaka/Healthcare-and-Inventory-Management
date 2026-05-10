@@ -3,7 +3,7 @@ import oracledb from "oracledb";
 import { getConnection } from "@/lib/db";
 
 
-// GET ALL PATIENTS
+// GET ALL DOCTORS
 export async function GET() {
 
   let connection;
@@ -13,7 +13,7 @@ export async function GET() {
     connection = await getConnection();
 
     const result = await connection.execute(
-      `SELECT * FROM PATIENT`,
+      `SELECT * FROM DOCTOR`,
       [],
       {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
@@ -27,12 +27,8 @@ export async function GET() {
     console.error(error);
 
     return NextResponse.json(
-      {
-        error: "Database error",
-      },
-      {
-        status: 500,
-      }
+      { error: "Database error" },
+      { status: 500 }
     );
 
   } finally {
@@ -45,7 +41,7 @@ export async function GET() {
 
 
 
-// ADD PATIENT
+// ADD DOCTOR
 export async function POST(req: Request) {
 
   let connection;
@@ -58,23 +54,21 @@ export async function POST(req: Request) {
 
     await connection.execute(
       `
-      INSERT INTO PATIENT
-      (Name, DOB, Gender, Phone, Address)
+      INSERT INTO DOCTOR
+      (Name, Specialization, Phone, Experience_Years)
       VALUES
       (
         :name,
-        TO_DATE(:dob, 'YYYY-MM-DD'),
-        :gender,
+        :specialization,
         :phone,
-        :address
+        :experience
       )
       `,
       {
         name: body.name,
-        dob: body.dob,
-        gender: body.gender,
+        specialization: body.specialization,
         phone: body.phone,
-        address: body.address,
+        experience: body.experience,
       },
       {
         autoCommit: true,
@@ -82,7 +76,7 @@ export async function POST(req: Request) {
     );
 
     return NextResponse.json({
-      message: "Patient added successfully",
+      message: "Doctor added successfully",
     });
 
   } catch (error) {
@@ -90,12 +84,8 @@ export async function POST(req: Request) {
     console.error(error);
 
     return NextResponse.json(
-      {
-        error: "Insert failed",
-      },
-      {
-        status: 500,
-      }
+      { error: "Insert failed" },
+      { status: 500 }
     );
 
   } finally {

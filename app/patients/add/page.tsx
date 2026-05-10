@@ -77,6 +77,7 @@ export default function NewPatientForm() {
           name="dob"
           value={formData.dob}
           onChange={handleChange}
+          placeholder="e.g. 1990-01-01"
         />
 
         {/* Gender */}

@@ -18,7 +18,7 @@ export default function Topbar() {
       title: 'Doctors', 
       breadcrumb: 'CarePulse / Doctors', 
       btnText: '+ Add Doctor', 
-      btnHref: '/doctors/new' 
+      btnHref: '/doctors/add' 
     },
     '/appointments': { 
       title: 'Appointments', 

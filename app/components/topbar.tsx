@@ -36,7 +36,25 @@ export default function Topbar() {
       title: 'Inventory', 
       breadcrumb: 'CarePulse / Inventory', 
       btnText: '+ Add Item', 
-      btnHref: '/inventory/new' 
+      btnHref: '/inventory/add' 
+    },
+    '/suppliers': { 
+      title: 'Suppliers', 
+      breadcrumb: 'CarePulse / Suppliers', 
+      btnText: '+ Add Supplier', 
+      btnHref: '/suppliers/add' 
+    },
+    '/billing': { 
+      title: 'Billing', 
+      breadcrumb: 'CarePulse / Billing', 
+      btnText: '+ New Invoice', 
+      btnHref: '/billing/add' 
+    },
+    '/reports': { 
+      title: 'Reports', 
+      breadcrumb: 'CarePulse / Reports', 
+      btnText: '+ Generate Report', 
+      btnHref: '/reports/add' 
     },
   };
 

@@ -33,7 +33,7 @@ export default function DashboardPage() {
             <h2 className="font-semibold text-slate-900 mb-4">Patient Visits (This Week)</h2>
             <div className="h-48 flex items-end gap-2">
               {[40, 30, 45, 60, 80, 50, 30].map((h, i) => (
-                <div key={i} className="flex-1 bg-emerald-100 rounded-t-sm hover:bg-emerald-500 transition-colors" style={{ height: `${h}%` }}></div>
+                <div key={i} className="flex-1 bg-emerald-100 rounded-t-sm hover:bg-emerald-500 transition-colors" style={{ height: `RS{h}%` }}></div>
               ))}
             </div>
           </div>

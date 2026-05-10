@@ -13,9 +13,9 @@ const navSections = [
   {
     category: "CLINICAL",
     items: [
-      { name: "Patients", href: "/patients", badge: "248", badgeColor: "teal" },
+      { name: "Patients", href: "/patients" },
       { name: "Doctors", href: "/doctors" },
-      { name: "Appointments", href: "/appointments", badge: "3", badgeColor: "red" },
+      { name: "Appointments", href: "/appointments" },
       { name: "Prescriptions", href: "/prescriptions" },
     ],
   },

@@ -45,7 +45,7 @@ export async function GET() {
 
     return NextResponse.json(
       {
-        error: "Appointments fetch failed",
+        error: "Database error",
       },
       {
         status: 500,
@@ -62,7 +62,7 @@ export async function GET() {
 
 
 
-// CREATE APPOINTMENT
+// ADD APPOINTMENT
 export async function POST(req: Request) {
 
   let connection;
@@ -73,74 +73,16 @@ export async function POST(req: Request) {
 
     connection = await getConnection();
 
-    // Find Patient
-    const patientResult = await connection.execute(
-      `
-      SELECT PATIENT_ID
-      FROM PATIENT
-      WHERE LOWER(NAME) = LOWER(:name)
-      `,
-      [body.patientName],
-      {
-        outFormat: oracledb.OUT_FORMAT_OBJECT,
-      }
-    );
-
-    // Find Doctor
-    const doctorResult = await connection.execute(
-      `
-      SELECT DOCTOR_ID
-      FROM DOCTOR
-      WHERE LOWER(NAME) = LOWER(:name)
-      `,
-      [body.doctorName],
-      {
-        outFormat: oracledb.OUT_FORMAT_OBJECT,
-      }
-    );
-
-    const patient =
-      patientResult.rows?.[0] as any;
-
-    const doctor =
-      doctorResult.rows?.[0] as any;
-
-    // Validation
-    if (!patient) {
-
-      return NextResponse.json(
-        {
-          error: "Patient not found",
-        },
-        {
-          status: 404,
-        }
-      );
-    }
-
-    if (!doctor) {
-
-      return NextResponse.json(
-        {
-          error: "Doctor not found",
-        },
-        {
-          status: 404,
-        }
-      );
-    }
-
-    // Insert Appointment
     await connection.execute(
       `
       INSERT INTO APPOINTMENT
       (
-        Patient_ID,
-        Doctor_ID,
-        Clinic_ID,
-        Appointment_Date,
-        Appointment_Time,
-        Status
+        PATIENT_ID,
+        DOCTOR_ID,
+        CLINIC_ID,
+        APPOINTMENT_DATE,
+        APPOINTMENT_TIME,
+        STATUS
       )
       VALUES
       (
@@ -153,8 +95,8 @@ export async function POST(req: Request) {
       )
       `,
       {
-        patientId: patient.PATIENT_ID,
-        doctorId: doctor.DOCTOR_ID,
+        patientId: body.patientId,
+        doctorId: body.doctorId,
         clinicId: body.clinicId,
         dateValue: body.date,
         timeValue: body.time,
@@ -166,7 +108,7 @@ export async function POST(req: Request) {
     );
 
     return NextResponse.json({
-      message: "Appointment created successfully",
+      message: "Appointment added successfully",
     });
 
   } catch (error) {
@@ -175,7 +117,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
-        error: "Appointment creation failed",
+        error: "Insert failed",
       },
       {
         status: 500,

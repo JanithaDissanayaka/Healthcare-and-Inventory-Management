@@ -1,66 +1,229 @@
 'use client';
 
-import React from 'react';
-// Reuse the status badge you built!
+import { useEffect, useState } from 'react';
 
-const appointments = [
-  { id: 1, time: "08:30 AM", patient: "Sarah Mitchell", doctor: "Dr. Patel", type: "Follow-up", dept: "Cardiology", status: "Confirmed" },
-  { id: 2, time: "09:15 AM", patient: "James Horowitz", doctor: "Dr. Chen", type: "Consultation", dept: "General", status: "Pending" },
-  { id: 3, time: "09:45 AM", patient: "Roberto Alvarez", doctor: "Unassigned", type: "Emergency", dept: "Orthopedics", status: "Urgent" },
-  { id: 4, time: "10:00 AM", patient: "Priya Nair", doctor: "Dr. Wong", type: "Check-up", dept: "Pediatrics", status: "Confirmed" },
-  { id: 5, time: "14:00 PM", patient: "Emma Clarke", doctor: "Dr. Singh", type: "Procedure", dept: "Dermatology", status: "Confirmed" },
-];
+type Appointment = {
+  APPOINTMENT_ID: number;
+  PATIENT_NAME: string;
+  DOCTOR_NAME: string;
+  CLINIC_ID: number;
+  APPOINTMENT_DATE: string;
+  APPOINTMENT_TIME: string;
+  STATUS: string;
+};
 
 export default function AppointmentsPage() {
+
+  const [appointments, setAppointments] =
+    useState<Appointment[]>([]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  const fetchAppointments = async () => {
+
+    try {
+
+      const res = await fetch(
+        '/api/appointments'
+      );
+
+      const data = await res.json();
+
+      setAppointments(data);
+
+    } catch (error) {
+
+      console.error(error);
+
+    }
+  };
+
+  // STATUS COLORS
+  const getStatusStyle = (
+    status: string
+  ) => {
+
+    switch (status) {
+
+      case 'Scheduled':
+        return 'bg-blue-100 text-blue-700';
+
+      case 'Completed':
+        return 'bg-emerald-100 text-emerald-700';
+
+      case 'Cancelled':
+        return 'bg-red-100 text-red-700';
+
+      default:
+        return 'bg-slate-100 text-slate-700';
+    }
+  };
+
   return (
     <div className="p-8 bg-slate-50 min-h-screen">
 
+      {/* Header */}
+      <div className="mb-8">
 
-      {/* 1. Urgent Alert Banner */}
-      <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg mb-6 flex items-center gap-3 shadow-sm">
-        <span className="text-xl">⚠️</span>
-        <p className="text-sm font-medium">3 appointments require urgent attention — review and assign a doctor immediately.</p>
+        <h1 className="text-3xl font-bold text-slate-900">
+          Appointments
+        </h1>
+
+        <p className="text-slate-500 mt-1">
+          Manage patient appointments
+        </p>
+
       </div>
 
-      {/* 2. Appointments Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+
+          <p className="text-slate-500 text-sm">
+            Total Appointments
+          </p>
+
+          <h2 className="text-4xl font-bold mt-2 text-slate-900">
+            {appointments.length}
+          </h2>
+
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+
+          <p className="text-slate-500 text-sm">
+            Scheduled
+          </p>
+
+          <h2 className="text-4xl font-bold mt-2 text-blue-600">
+            {
+              appointments.filter(
+                (a) => a.STATUS === 'Scheduled'
+              ).length
+            }
+          </h2>
+
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+
+          <p className="text-slate-500 text-sm">
+            Completed
+          </p>
+
+          <h2 className="text-4xl font-bold mt-2 text-emerald-600">
+            {
+              appointments.filter(
+                (a) => a.STATUS === 'Completed'
+              ).length
+            }
+          </h2>
+
+        </div>
+
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+        <table className="w-full text-sm">
+
+          <thead className="bg-slate-100">
+
             <tr>
-              {["TIME", "PATIENT", "DOCTOR", "TYPE", "DEPT", "STATUS", "ACTIONS"].map((head) => (
-                <th key={head} className="p-4 font-semibold text-slate-600">{head}</th>
-              ))}
+
+              <th className="text-left p-4 font-semibold text-slate-600">
+                ID
+              </th>
+
+              <th className="text-left p-4 font-semibold text-slate-600">
+                Patient
+              </th>
+
+              <th className="text-left p-4 font-semibold text-slate-600">
+                Doctor
+              </th>
+
+              <th className="text-left p-4 font-semibold text-slate-600">
+                Clinic
+              </th>
+
+              <th className="text-left p-4 font-semibold text-slate-600">
+                Date
+              </th>
+
+              <th className="text-left p-4 font-semibold text-slate-600">
+                Time
+              </th>
+
+              <th className="text-left p-4 font-semibold text-slate-600">
+                Status
+              </th>
+
             </tr>
+
           </thead>
+
           <tbody className="divide-y divide-slate-100">
+
             {appointments.map((app) => (
-              <tr 
-                key={app.id} 
-                className={`transition-colors ${app.status === 'Urgent' ? 'bg-red-50/50' : 'hover:bg-slate-50'}`}
+
+              <tr
+                key={app.APPOINTMENT_ID}
+                className="hover:bg-slate-50 transition-colors"
               >
-                <td className="p-4 font-medium text-slate-900">{app.time}</td>
-                <td className="p-4 font-semibold text-slate-900">{app.patient}</td>
-                <td className={`p-4 ${app.doctor === 'Unassigned' ? 'text-red-600 font-bold' : 'text-slate-600'}`}>
-                  {app.doctor}
+
+                <td className="p-4 font-semibold text-slate-900">
+                  #{app.APPOINTMENT_ID}
                 </td>
-                <td className="p-4 text-slate-600">{app.type}</td>
-                <td className="p-4 text-slate-600">{app.dept}</td>
+
                 <td className="p-4">
 
+                  <div className="font-semibold text-slate-900">
+                    {app.PATIENT_NAME}
+                  </div>
+
                 </td>
+
+                <td className="p-4 text-slate-700">
+                  {app.DOCTOR_NAME}
+                </td>
+
+                <td className="p-4 text-slate-700">
+                  {app.CLINIC_ID}
+                </td>
+
+                <td className="p-4 text-slate-700">
+                  {app.APPOINTMENT_DATE?.split('T')[0]}
+                </td>
+
+                <td className="p-4 text-slate-700">
+                  {app.APPOINTMENT_TIME}
+                </td>
+
                 <td className="p-4">
-                  {/* Conditional Action Link */}
-                  {app.doctor === 'Unassigned' ? (
-                    <button className="text-emerald-600 font-bold hover:underline">Assign →</button>
-                  ) : (
-                    <button className="text-slate-500 hover:text-emerald-600">Manage</button>
-                  )}
+
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(app.STATUS)}`}
+                  >
+                    {app.STATUS}
+                  </span>
+
                 </td>
+
               </tr>
+
             ))}
+
           </tbody>
+
         </table>
+
       </div>
+
     </div>
   );
 }

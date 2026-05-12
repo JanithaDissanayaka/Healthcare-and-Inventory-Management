@@ -64,7 +64,15 @@ const StatCard = ({
 export default function DashboardPage() {
 
   const [data, setData] =
-    useState<DashboardData | null>(null);
+    useState<DashboardData>({
+      totalPatients: 0,
+      totalDoctors: 0,
+      latestPatients: [],
+      latestDoctors: [],
+    });
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
     fetchDashboard();
@@ -78,19 +86,35 @@ export default function DashboardPage() {
 
       const dashboardData = await res.json();
 
-      setData(dashboardData);
+      setData({
+        totalPatients:
+          dashboardData.totalPatients || 0,
+
+        totalDoctors:
+          dashboardData.totalDoctors || 0,
+
+        latestPatients:
+          dashboardData.latestPatients || [],
+
+        latestDoctors:
+          dashboardData.latestDoctors || [],
+      });
 
     } catch (error) {
 
       console.error(error);
 
+    } finally {
+
+      setLoading(false);
+
     }
   };
 
-  if (!data) {
+  if (loading) {
 
     return (
-      <div className="p-8">
+      <div className="p-8 text-lg">
         Loading dashboard...
       </div>
     );
@@ -173,7 +197,7 @@ export default function DashboardPage() {
 
           <div className="space-y-4">
 
-            {data.latestPatients.map((patient) => (
+            {(data.latestPatients || []).map((patient) => (
 
               <div
                 key={patient.PATIENT_ID}
@@ -183,7 +207,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-4">
 
                   <div className="h-14 w-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg">
-                    {patient.NAME.charAt(0)}
+                    {patient.NAME?.charAt(0)}
                   </div>
 
                   <div>
@@ -200,7 +224,7 @@ export default function DashboardPage() {
 
                 </div>
 
-                <div className="text-emerald-600">
+                <div className="text-emerald-600 text-xl">
                   →
                 </div>
 
@@ -237,7 +261,7 @@ export default function DashboardPage() {
 
           <div className="space-y-4">
 
-            {data.latestDoctors.map((doctor) => (
+            {(data.latestDoctors || []).map((doctor) => (
 
               <div
                 key={doctor.DOCTOR_ID}
@@ -247,7 +271,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-4">
 
                   <div className="h-14 w-14 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg">
-                    {doctor.NAME.charAt(0)}
+                    {doctor.NAME?.charAt(0)}
                   </div>
 
                   <div>
@@ -264,7 +288,7 @@ export default function DashboardPage() {
 
                 </div>
 
-                <div className="text-blue-600">
+                <div className="text-blue-600 text-xl">
                   →
                 </div>
 

@@ -24,13 +24,13 @@ export default function Topbar() {
       title: 'Appointments', 
       breadcrumb: 'CarePulse / Appointments', 
       btnText: '+ New Appointment', 
-      btnHref: '/appointments/new' 
+      btnHref: '/appointments/add' 
     },
     '/prescriptions': { 
       title: 'Prescriptions', 
       breadcrumb: 'CarePulse / Prescriptions', 
       btnText: '+ New Prescription', 
-      btnHref: '/prescriptions/new' 
+      btnHref: '/prescriptions/add' 
     },
     '/inventory': { 
       title: 'Inventory', 

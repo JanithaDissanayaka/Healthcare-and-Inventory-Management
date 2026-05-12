@@ -16,6 +16,7 @@ const navSections = [
       { name: "Patients", href: "/patients" },
       { name: "Doctors", href: "/doctors" },
       { name: "Appointments", href: "/appointments" },
+      { name: "Treatments", href: "/treatments" },
       { name: "Prescriptions", href: "/prescriptions" },
     ],
   },
@@ -42,6 +43,7 @@ export default function Sidebar() {
       case "Patients": return <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
       case "Dashboard": return <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z" /></svg>;
       case "Appointments": return <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
+      case "Treatments": return <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
       case "Prescriptions": return <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1H9L8 4zm5.5 5.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /></svg>;
       case "Inventory": return <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>;
       case "Suppliers": return <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;

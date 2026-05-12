@@ -1,95 +1,657 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
+import {
+  Wallet,
+  User,
+  CalendarDays,
+  FileText,
+  DollarSign,
+  Plus,
+  Trash2,
+  Save,
+  CreditCard,
+  Receipt,
+} from 'lucide-react';
+
+type InvoiceItem = {
+  description: string;
+  amount: number;
+};
 
 export default function AddBillingPage() {
-  const [total, setTotal] = useState(0);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [patient, setPatient] =
+    useState('');
+
+  const [billingDate, setBillingDate] =
+    useState('');
+
+  const [status, setStatus] =
+    useState('Pending');
+
+  const [items, setItems] =
+    useState<InvoiceItem[]>([
+      {
+        description: '',
+        amount: 0,
+      },
+    ]);
+
+  // TOTAL
+  const total = useMemo(() => {
+
+    return items.reduce(
+      (sum, item) =>
+        sum + Number(item.amount || 0),
+      0
+    );
+
+  }, [items]);
+
+  // UPDATE ITEM
+  const updateItem = (
+    index: number,
+    field: keyof InvoiceItem,
+    value: string | number
+  ) => {
+
+    const updated = [...items];
+
+    updated[index] = {
+      ...updated[index],
+      [field]:
+        field === 'amount'
+          ? Number(value)
+          : value,
+    };
+
+    setItems(updated);
+  };
+
+  // ADD ITEM
+  const addItem = () => {
+
+    setItems([
+      ...items,
+      {
+        description: '',
+        amount: 0,
+      },
+    ]);
+  };
+
+  // REMOVE ITEM
+  const removeItem = (index: number) => {
+
+    if (items.length === 1) return;
+
+    setItems(
+      items.filter((_, i) => i !== index)
+    );
+  };
+
+  // SUBMIT
+  const handleSubmit = async (
+    e: React.FormEvent
+  ) => {
+
+    e.preventDefault();
+
+    setLoading(true);
+
+    try {
+
+      const payload = {
+        patient,
+        billingDate,
+        status,
+        total,
+        items,
+      };
+
+      console.log(payload);
+
+      // API CALL HERE
+
+      alert('Invoice created successfully');
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert('Error creating invoice');
+
+    } finally {
+
+      setLoading(false);
+
+    }
+  };
 
   return (
-    <div className="p-8 bg-slate-50 min-h-screen">
+    <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
 
-      <div className="max-w-4xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm p-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900">Create New Invoice</h2>
-          <p className="text-sm text-slate-500 mt-1">Generate a bill for a patient service</p>
+      <div
+        className="
+          bg-white
+          rounded-3xl
+          border border-slate-200
+          shadow-sm
+          hover:shadow-md
+          transition
+          overflow-hidden
+          max-w-6xl
+          mx-auto
+        "
+      >
+
+        {/* TOP SECTION */}
+        <div
+          className="
+            bg-white
+            border-b border-slate-200
+            px-8 py-7
+            relative
+          "
+        >
+
+          {/* DECORATION */}
+          <div
+            className="
+              absolute
+              right-10 top-6
+              h-24 w-24
+              rounded-full
+              bg-emerald-50
+            "
+          ></div>
+
+          <div
+            className="
+              absolute
+              right-24 top-14
+              h-14 w-14
+              rounded-full
+              bg-cyan-50
+            "
+          ></div>
+
+          <div className="relative flex items-center gap-5">
+
+            {/* ICON */}
+            <div
+              className="
+                h-16 w-16
+                rounded-2xl
+                bg-emerald-50
+                border border-emerald-100
+                flex items-center justify-center
+              "
+            >
+              <Wallet
+                className="text-emerald-600"
+                size={28}
+              />
+            </div>
+
+            {/* TEXT */}
+            <div>
+
+              <h2 className="text-3xl font-bold text-slate-900">
+                Create Invoice
+              </h2>
+
+              <p className="text-slate-500 mt-2 text-base">
+                Generate billing invoices for healthcare services.
+              </p>
+
+            </div>
+
+          </div>
+
         </div>
 
-        <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
-          {/* Patient Selection */}
+        {/* FORM */}
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 lg:p-10 space-y-10"
+        >
+
+          {/* PATIENT DETAILS */}
           <section>
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Patient Details</h3>
+
+            <div className="flex items-center gap-3 mb-6">
+
+              <User
+                size={18}
+                className="text-emerald-600"
+              />
+
+              <h3 className="text-lg font-bold text-slate-900">
+                Patient Details
+              </h3>
+
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField label="Select Patient" placeholder="Search by name or ID..." />
-              <InputField label="Billing Date" type="date" />
+
+              {/* PATIENT */}
+              <InputField
+                label="Patient Name / ID"
+                placeholder="Search patient..."
+                value={patient}
+                onChange={setPatient}
+                icon={<User size={18} />}
+              />
+
+              {/* DATE */}
+              <InputField
+                label="Billing Date"
+                type="date"
+                value={billingDate}
+                onChange={setBillingDate}
+                icon={<CalendarDays size={18} />}
+              />
+
             </div>
+
           </section>
 
-          {/* Invoice Items */}
+          {/* INVOICE ITEMS */}
           <section>
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Invoice Items</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-12 gap-4 items-end">
-                <div className="col-span-6">
-                  <InputField label="Service / Description" placeholder="e.g. Cardiology Consultation" />
-                </div>
-                <div className="col-span-4">
-                  <InputField label="Amount" type="number" placeholder="0.00" />
-                </div>
-                <div className="col-span-2">
-                   <button className="w-full py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200">
-                     Remove
-                   </button>
-                </div>
+
+            <div className="flex items-center justify-between mb-6">
+
+              <div className="flex items-center gap-3">
+
+                <Receipt
+                  size={18}
+                  className="text-cyan-600"
+                />
+
+                <h3 className="text-lg font-bold text-slate-900">
+                  Invoice Items
+                </h3>
+
               </div>
-              
-              <button type="button" className="text-sm font-medium text-emerald-600 hover:text-emerald-700">
-                + Add another item
+
+              {/* ADD BUTTON */}
+              <button
+                type="button"
+                onClick={addItem}
+                className="
+                  flex items-center gap-2
+                  px-4 py-2
+                  rounded-2xl
+                  bg-emerald-50
+                  hover:bg-emerald-100
+                  text-emerald-700
+                  font-semibold
+                  transition
+                "
+              >
+                <Plus size={18} />
+
+                Add Item
+
               </button>
+
             </div>
+
+            <div className="space-y-5">
+
+              {items.map((item, index) => (
+
+                <div
+                  key={index}
+                  className="
+                    p-5
+                    rounded-3xl
+                    border border-slate-200
+                    bg-slate-50
+                  "
+                >
+
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
+
+                    {/* DESCRIPTION */}
+                    <div className="md:col-span-7">
+
+                      <label className="block text-sm font-semibold text-slate-700 mb-3">
+                        Service Description
+                      </label>
+
+                      <div className="relative">
+
+                        <div
+                          className="
+                            absolute
+                            left-4 top-1/2
+                            -translate-y-1/2
+                            text-slate-400
+                          "
+                        >
+                          <FileText size={18} />
+                        </div>
+
+                        <input
+                          type="text"
+                          value={item.description}
+                          onChange={(e) =>
+                            updateItem(
+                              index,
+                              'description',
+                              e.target.value
+                            )
+                          }
+                          placeholder="Cardiology consultation"
+                          className="
+                            w-full
+                            pl-12 pr-4 py-4
+                            rounded-2xl
+                            border border-slate-200
+                            bg-white
+                            outline-none
+                            focus:ring-2
+                            focus:ring-emerald-500
+                          "
+                        />
+
+                      </div>
+
+                    </div>
+
+                    {/* AMOUNT */}
+                    <div className="md:col-span-3">
+
+                      <label className="block text-sm font-semibold text-slate-700 mb-3">
+                        Amount
+                      </label>
+
+                      <div className="relative">
+
+                        <div
+                          className="
+                            absolute
+                            left-4 top-1/2
+                            -translate-y-1/2
+                            text-slate-400
+                          "
+                        >
+                          <DollarSign size={18} />
+                        </div>
+
+                        <input
+                          type="number"
+                          value={item.amount}
+                          onChange={(e) =>
+                            updateItem(
+                              index,
+                              'amount',
+                              e.target.value
+                            )
+                          }
+                          placeholder="0.00"
+                          className="
+                            w-full
+                            pl-12 pr-4 py-4
+                            rounded-2xl
+                            border border-slate-200
+                            bg-white
+                            outline-none
+                            focus:ring-2
+                            focus:ring-emerald-500
+                          "
+                        />
+
+                      </div>
+
+                    </div>
+
+                    {/* REMOVE */}
+                    <div className="md:col-span-2">
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeItem(index)
+                        }
+                        className="
+                          w-full
+                          flex items-center justify-center gap-2
+                          py-4
+                          rounded-2xl
+                          bg-red-50
+                          hover:bg-red-100
+                          text-red-600
+                          font-semibold
+                          transition
+                        "
+                      >
+                        <Trash2 size={18} />
+
+                        Remove
+
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              ))}
+
+            </div>
+
           </section>
 
-          {/* Totals & Status */}
-          <section className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-            <div className="flex justify-between items-center">
-              <span className="text-lg font-bold text-slate-900">Total Due</span>
-              <span className="text-2xl font-bold text-emerald-600">$0.00</span>
+          {/* SUMMARY */}
+          <section
+            className="
+              rounded-3xl
+              border border-slate-200
+              bg-slate-50
+              p-8
+            "
+          >
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+
+              {/* TOTAL */}
+              <div>
+
+                <p className="text-sm text-slate-500">
+                  Total Invoice Amount
+                </p>
+
+                <h2 className="text-5xl font-bold text-emerald-600 mt-3">
+                  ${total.toFixed(2)}
+                </h2>
+
+              </div>
+
+              {/* STATUS */}
+              <div>
+
+                <label className="block text-sm font-semibold text-slate-700 mb-3">
+                  Invoice Status
+                </label>
+
+                <div className="relative">
+
+                  <div
+                    className="
+                      absolute
+                      left-4 top-1/2
+                      -translate-y-1/2
+                      text-slate-400
+                    "
+                  >
+                    <CreditCard size={18} />
+                  </div>
+
+                  <select
+                    value={status}
+                    onChange={(e) =>
+                      setStatus(e.target.value)
+                    }
+                    className="
+                      w-full
+                      pl-12 pr-4 py-4
+                      rounded-2xl
+                      border border-slate-200
+                      bg-white
+                      outline-none
+                      appearance-none
+                      focus:ring-2
+                      focus:ring-emerald-500
+                    "
+                  >
+
+                    <option value="Draft">
+                      Draft
+                    </option>
+
+                    <option value="Pending">
+                      Pending
+                    </option>
+
+                    <option value="Paid">
+                      Paid
+                    </option>
+
+                  </select>
+
+                </div>
+
+              </div>
+
             </div>
-            <div className="mt-6 flex gap-4">
-              <SelectField label="Invoice Status" options={["Draft", "Pending", "Paid"]} />
-            </div>
+
           </section>
 
-          {/* Actions */}
-          <div className="pt-6 border-t border-slate-100 flex gap-4">
-            <button type="submit" className="flex-1 bg-emerald-600 text-white font-semibold py-3 rounded-lg hover:bg-emerald-700 transition-colors">
-              Create Invoice
+          {/* BUTTONS */}
+          <div className="flex flex-col md:flex-row gap-4 pt-2">
+
+            {/* CREATE */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="
+                flex-1
+                flex items-center justify-center gap-3
+                bg-emerald-600
+                hover:bg-emerald-700
+                text-white
+                py-4
+                rounded-2xl
+                font-semibold
+                transition
+                disabled:opacity-70
+              "
+            >
+              <Save size={20} />
+
+              {loading
+                ? 'Creating Invoice...'
+                : 'Create Invoice'}
+
             </button>
-            <button type="button" className="px-8 text-slate-500 font-medium py-3 rounded-lg hover:bg-slate-100 transition-colors">
+
+            {/* CANCEL */}
+            <button
+              type="button"
+              className="
+                px-8
+                py-4
+                rounded-2xl
+                border border-slate-200
+                bg-white
+                hover:bg-slate-50
+                text-slate-700
+                font-semibold
+                transition
+              "
+            >
               Cancel
             </button>
+
           </div>
+
         </form>
+
       </div>
+
     </div>
   );
 }
 
-// --- Reusable Form Components (Keep these in a separate file or at the bottom) ---
 
-const InputField = ({ label, type = "text", placeholder = "" }: { label: string, type?: string, placeholder?: string }) => (
-  <div>
-    <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-    <input type={type} placeholder={placeholder} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
-  </div>
-);
+/* INPUT FIELD */
 
-const SelectField = ({ label, options }: { label: string, options: string[] }) => (
+const InputField = ({
+  label,
+  type = "text",
+  placeholder = "",
+  value,
+  onChange,
+  icon,
+}: {
+  label: string;
+  type?: string;
+  placeholder?: string;
+  value: string;
+  onChange: (value: string) => void;
+  icon: React.ReactNode;
+}) => (
+
   <div>
-    <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-    <select className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
-      <option value="">Select...</option>
-      {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-    </select>
+
+    <label className="block text-sm font-semibold text-slate-700 mb-3">
+      {label}
+    </label>
+
+    <div className="relative">
+
+      <div
+        className="
+          absolute
+          left-4 top-1/2
+          -translate-y-1/2
+          text-slate-400
+        "
+      >
+        {icon}
+      </div>
+
+      <input
+        type={type}
+        value={value}
+        onChange={(e) =>
+          onChange(e.target.value)
+        }
+        placeholder={placeholder}
+        className="
+          w-full
+          pl-12 pr-4 py-4
+          rounded-2xl
+          border border-slate-200
+          bg-white
+          outline-none
+          transition-all
+          focus:ring-2
+          focus:ring-emerald-500
+          focus:border-transparent
+        "
+      />
+
+    </div>
+
   </div>
 );

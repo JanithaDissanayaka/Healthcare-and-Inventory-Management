@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import oracledb from "oracledb";
+
 import { getConnection } from "@/lib/db";
 
-
-// GET ALL APPOINTMENTS
 export async function GET() {
 
   let connection;
@@ -12,161 +11,144 @@ export async function GET() {
 
     connection = await getConnection();
 
-    const result = await connection.execute(
-      `
-      SELECT
-        a.APPOINTMENT_ID,
-        p.NAME AS PATIENT_NAME,
-        d.NAME AS DOCTOR_NAME,
-        a.CLINIC_ID,
-        a.APPOINTMENT_DATE,
-        a.APPOINTMENT_TIME,
-        a.STATUS
-      FROM APPOINTMENT a
-      JOIN PATIENT p
-        ON a.PATIENT_ID = p.PATIENT_ID
-      JOIN DOCTOR d
-        ON a.DOCTOR_ID = d.DOCTOR_ID
-      ORDER BY a.APPOINTMENT_ID DESC
-      `,
-      [],
-      {
-        outFormat: oracledb.OUT_FORMAT_OBJECT,
-      }
-    );
-
-    return NextResponse.json(
-      result.rows || []
-    );
-
-  } catch (error) {
-
-    console.error(error);
-
-    return NextResponse.json(
-      {
-        error: "Appointments fetch failed",
-      },
-      {
-        status: 500,
-      }
-    );
-
-  } finally {
-
-    if (connection) {
-      await connection.close();
-    }
-  }
-}
-
-
-
-// CREATE APPOINTMENT
-export async function POST(req: Request) {
-
-  let connection;
-
-  try {
-
-    const body = await req.json();
-
-    connection = await getConnection();
-
-    // Find Patient
-    const patientResult = await connection.execute(
-      `
-      SELECT PATIENT_ID
-      FROM PATIENT
-      WHERE LOWER(NAME) = LOWER(:name)
-      `,
-      [body.patientName],
-      {
-        outFormat: oracledb.OUT_FORMAT_OBJECT,
-      }
-    );
-
-    // Find Doctor
-    const doctorResult = await connection.execute(
-      `
-      SELECT DOCTOR_ID
-      FROM DOCTOR
-      WHERE LOWER(NAME) = LOWER(:name)
-      `,
-      [body.doctorName],
-      {
-        outFormat: oracledb.OUT_FORMAT_OBJECT,
-      }
-    );
-
-    const patient =
-      patientResult.rows?.[0] as any;
-
-    const doctor =
-      doctorResult.rows?.[0] as any;
-
-    // Validation
-    if (!patient) {
-
-      return NextResponse.json(
+    /* TOTAL PATIENTS */
+    const patientResult =
+      await connection.execute(
+        `
+        SELECT COUNT(*) AS TOTAL
+        FROM PATIENT
+        `,
+        [],
         {
-          error: "Patient not found",
-        },
-        {
-          status: 404,
+          outFormat:
+            oracledb.OUT_FORMAT_OBJECT,
         }
       );
-    }
 
-    if (!doctor) {
-
-      return NextResponse.json(
+    /* TOTAL DOCTORS */
+    const doctorResult =
+      await connection.execute(
+        `
+        SELECT COUNT(*) AS TOTAL
+        FROM DOCTOR
+        `,
+        [],
         {
-          error: "Doctor not found",
-        },
-        {
-          status: 404,
+          outFormat:
+            oracledb.OUT_FORMAT_OBJECT,
         }
       );
-    }
 
-    // Insert Appointment
-    await connection.execute(
-      `
-      INSERT INTO APPOINTMENT
-      (
-        Patient_ID,
-        Doctor_ID,
-        Clinic_ID,
-        Appointment_Date,
-        Appointment_Time,
-        Status
-      )
-      VALUES
-      (
-        :patientId,
-        :doctorId,
-        :clinicId,
-        TO_DATE(:dateValue, 'YYYY-MM-DD'),
-        :timeValue,
-        :status
-      )
-      `,
-      {
-        patientId: patient.PATIENT_ID,
-        doctorId: doctor.DOCTOR_ID,
-        clinicId: body.clinicId,
-        dateValue: body.date,
-        timeValue: body.time,
-        status: body.status,
-      },
-      {
-        autoCommit: true,
-      }
-    );
+    /* TOTAL APPOINTMENTS */
+    const appointmentResult =
+      await connection.execute(
+        `
+        SELECT COUNT(*) AS TOTAL
+        FROM APPOINTMENT
+        `,
+        [],
+        {
+          outFormat:
+            oracledb.OUT_FORMAT_OBJECT,
+        }
+      );
+
+    /* TOTAL REVENUE */
+    const revenueResult =
+      await connection.execute(
+        `
+        SELECT NVL(SUM(COST),0) AS TOTAL
+        FROM TREATMENT
+        `,
+        [],
+        {
+          outFormat:
+            oracledb.OUT_FORMAT_OBJECT,
+        }
+      );
+
+    /* LATEST PATIENTS */
+    const latestPatients =
+      await connection.execute(
+        `
+        SELECT
+          PATIENT_ID,
+          NAME,
+          PHONE
+        FROM PATIENT
+        ORDER BY PATIENT_ID DESC
+        FETCH FIRST 5 ROWS ONLY
+        `,
+        [],
+        {
+          outFormat:
+            oracledb.OUT_FORMAT_OBJECT,
+        }
+      );
+
+    /* LATEST DOCTORS */
+    const latestDoctors =
+      await connection.execute(
+        `
+        SELECT
+          DOCTOR_ID,
+          NAME,
+          SPECIALIZATION
+        FROM DOCTOR
+        ORDER BY DOCTOR_ID DESC
+        FETCH FIRST 5 ROWS ONLY
+        `,
+        [],
+        {
+          outFormat:
+            oracledb.OUT_FORMAT_OBJECT,
+        }
+      );
+
+    /* CHART DATA */
+    const weeklyPatients =
+      await connection.execute(
+        `
+        SELECT
+          TO_CHAR(DOB, 'MON') AS MONTH,
+          COUNT(*) AS PATIENTS
+        FROM PATIENT
+        GROUP BY TO_CHAR(DOB, 'MON')
+        ORDER BY MIN(DOB)
+        `,
+        [],
+        {
+          outFormat:
+            oracledb.OUT_FORMAT_OBJECT,
+        }
+      );
 
     return NextResponse.json({
-      message: "Appointment created successfully",
+
+      totalPatients:
+        (patientResult.rows?.[0] as any)?.TOTAL || 0,
+
+      totalDoctors:
+        (doctorResult.rows?.[0] as any)?.TOTAL || 0,
+
+      totalAppointments:
+        (appointmentResult.rows?.[0] as any)?.TOTAL || 0,
+
+      totalRevenue:
+        (revenueResult.rows?.[0] as any)?.TOTAL || 0,
+
+      latestPatients:
+        latestPatients.rows || [],
+
+      latestDoctors:
+        latestDoctors.rows || [],
+
+      weeklyPatients:
+        weeklyPatients.rows?.map((item: any) => ({
+          month: item.MONTH,
+          patients: item.PATIENTS,
+        })) || [],
+
     });
 
   } catch (error) {
@@ -175,7 +157,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
-        error: "Appointment creation failed",
+        error: "Dashboard error",
       },
       {
         status: 500,

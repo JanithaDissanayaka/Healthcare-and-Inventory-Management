@@ -12,18 +12,14 @@ import {
   ShieldAlert,
   Search,
   Boxes,
-  CalendarDays,
-  Truck,
+  Trash2,
 } from 'lucide-react';
 
 type InventoryItem = {
   ITEM_ID: number;
   ITEM_NAME: string;
-  CATEGORY: string;
   QUANTITY: number;
-  UNIT: string;
-  EXPIRY_DATE: string;
-  SUPPLIER_NAME: string;
+  UNIT_PRICE: number;
   STATUS: string;
 };
 
@@ -38,19 +34,27 @@ export default function InventoryPage() {
   const [loading, setLoading] =
     useState(true);
 
+
+
   useEffect(() => {
     fetchInventory();
   }, []);
 
-  const fetchInventory = async () => {
+
+
+
+  const fetchInventory =
+    async () => {
 
     try {
 
-      const res = await fetch(
-        '/api/inventory'
-      );
+      const res =
+        await fetch(
+          '/api/inventory'
+        );
 
-      const data = await res.json();
+      const data =
+        await res.json();
 
       setItems(
         Array.isArray(data)
@@ -69,59 +73,70 @@ export default function InventoryPage() {
     }
   };
 
-  const filteredItems = useMemo(() => {
 
-    return items.filter((item) =>
 
-      item.ITEM_NAME
-        ?.toLowerCase()
-        .includes(search.toLowerCase()) ||
+  const filteredItems =
+    useMemo(() => {
 
-      item.CATEGORY
-        ?.toLowerCase()
-        .includes(search.toLowerCase()) ||
+      return items.filter(
+        (item) =>
 
-      item.SUPPLIER_NAME
-        ?.toLowerCase()
-        .includes(search.toLowerCase())
+          item.ITEM_NAME
+            ?.toLowerCase()
+            .includes(
+              search.toLowerCase()
+            )
 
-    );
+      );
 
-  }, [items, search]);
+    }, [items, search]);
 
-  const getStatusStyle = (
-    status: string
-  ) => {
 
-    switch (status) {
 
-      case 'Critical':
-        return 'bg-red-100 text-red-700';
+  const getStatusStyle =
+    (status: string) => {
 
-      case 'Low':
-        return 'bg-amber-100 text-amber-700';
+      switch (status) {
 
-      default:
-        return 'bg-emerald-100 text-emerald-700';
-    }
-  };
+        case 'LOW STOCK':
+          return
+          'bg-red-100 text-red-700';
+
+        default:
+          return
+          'bg-emerald-100 text-emerald-700';
+      }
+    };
+
+
 
   if (loading) {
 
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+
+      <div
+        className="
+          min-h-screen
+          bg-slate-50
+          flex items-center justify-center
+        "
+      >
+
         <div className="text-slate-600 text-lg font-medium">
           Loading inventory...
         </div>
+
       </div>
     );
-
   }
 
+
+
   return (
+
     <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
 
-      {/* TOP SECTION */}
+      {/* TOP */}
       <div
         className="
           bg-white
@@ -143,7 +158,6 @@ export default function InventoryPage() {
           "
         >
 
-          {/* DECORATION */}
           <div
             className="
               absolute
@@ -154,19 +168,8 @@ export default function InventoryPage() {
             "
           ></div>
 
-          <div
-            className="
-              absolute
-              right-24 top-14
-              h-14 w-14
-              rounded-full
-              bg-cyan-50
-            "
-          ></div>
-
           <div className="relative flex items-center gap-5">
 
-            {/* ICON */}
             <div
               className="
                 h-16 w-16
@@ -176,13 +179,14 @@ export default function InventoryPage() {
                 flex items-center justify-center
               "
             >
+
               <Boxes
                 className="text-emerald-600"
                 size={28}
               />
+
             </div>
 
-            {/* TEXT */}
             <div>
 
               <h2 className="text-3xl font-bold text-slate-900">
@@ -190,7 +194,7 @@ export default function InventoryPage() {
               </h2>
 
               <p className="text-slate-500 mt-2 text-base">
-                Monitor hospital medicine and equipment stock.
+                Monitor hospital stock and supplies.
               </p>
 
             </div>
@@ -198,6 +202,8 @@ export default function InventoryPage() {
           </div>
 
         </div>
+
+
 
         {/* SEARCH + STATS */}
         <div className="p-6 lg:p-8">
@@ -220,7 +226,9 @@ export default function InventoryPage() {
               placeholder="Search inventory..."
               value={search}
               onChange={(e) =>
-                setSearch(e.target.value)
+                setSearch(
+                  e.target.value
+                )
               }
               className="
                 w-full lg:w-[350px]
@@ -236,7 +244,9 @@ export default function InventoryPage() {
 
           </div>
 
-          {/* SUMMARY */}
+
+
+          {/* STATS */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
             {/* TOTAL */}
@@ -271,17 +281,21 @@ export default function InventoryPage() {
                     flex items-center justify-center
                   "
                 >
+
                   <Package
                     className="text-emerald-600"
                     size={24}
                   />
+
                 </div>
 
               </div>
 
             </div>
 
-            {/* LOW */}
+
+
+            {/* LOW STOCK */}
             <div
               className="
                 rounded-3xl
@@ -299,12 +313,16 @@ export default function InventoryPage() {
                     Low Stock
                   </p>
 
-                  <h2 className="text-4xl font-bold text-amber-600 mt-3">
+                  <h2 className="text-4xl font-bold text-red-600 mt-3">
+
                     {
                       items.filter(
-                        (i) => i.STATUS === 'Low'
+                        (i) =>
+                          i.STATUS ===
+                          'LOW STOCK'
                       ).length
                     }
+
                   </h2>
 
                 </div>
@@ -313,21 +331,25 @@ export default function InventoryPage() {
                   className="
                     h-14 w-14
                     rounded-2xl
-                    bg-amber-100
+                    bg-red-100
                     flex items-center justify-center
                   "
                 >
-                  <AlertTriangle
-                    className="text-amber-600"
+
+                  <ShieldAlert
+                    className="text-red-600"
                     size={24}
                   />
+
                 </div>
 
               </div>
 
             </div>
 
-            {/* CRITICAL */}
+
+
+            {/* AVAILABLE */}
             <div
               className="
                 rounded-3xl
@@ -342,15 +364,19 @@ export default function InventoryPage() {
                 <div>
 
                   <p className="text-sm text-slate-500">
-                    Critical Stock
+                    Available
                   </p>
 
-                  <h2 className="text-4xl font-bold text-red-600 mt-3">
+                  <h2 className="text-4xl font-bold text-emerald-600 mt-3">
+
                     {
                       items.filter(
-                        (i) => i.STATUS === 'Critical'
+                        (i) =>
+                          i.STATUS ===
+                          'AVAILABLE'
                       ).length
                     }
+
                   </h2>
 
                 </div>
@@ -359,14 +385,16 @@ export default function InventoryPage() {
                   className="
                     h-14 w-14
                     rounded-2xl
-                    bg-red-100
+                    bg-emerald-100
                     flex items-center justify-center
                   "
                 >
-                  <ShieldAlert
-                    className="text-red-600"
+
+                  <AlertTriangle
+                    className="text-emerald-600"
                     size={24}
                   />
+
                 </div>
 
               </div>
@@ -379,6 +407,8 @@ export default function InventoryPage() {
 
       </div>
 
+
+
       {/* TABLE */}
       <div
         className="
@@ -390,7 +420,7 @@ export default function InventoryPage() {
         "
       >
 
-        {/* TABLE HEADER */}
+        {/* HEADER */}
         <div
           className="
             flex items-center justify-between
@@ -406,7 +436,7 @@ export default function InventoryPage() {
             </h2>
 
             <p className="text-slate-500 mt-1">
-              Complete medicine and equipment stock
+              Complete inventory stock
             </p>
 
           </div>
@@ -426,10 +456,12 @@ export default function InventoryPage() {
 
         </div>
 
+
+
         {/* TABLE */}
         <div className="overflow-x-auto">
 
-          <table className="w-full min-w-[1100px]">
+          <table className="w-full">
 
             <thead className="bg-slate-50">
 
@@ -440,181 +472,177 @@ export default function InventoryPage() {
                 </th>
 
                 <th className="text-left p-5 text-sm font-semibold text-slate-600">
-                  Category
-                </th>
-
-                <th className="text-left p-5 text-sm font-semibold text-slate-600">
                   Quantity
                 </th>
 
                 <th className="text-left p-5 text-sm font-semibold text-slate-600">
-                  Expiry Date
-                </th>
-
-                <th className="text-left p-5 text-sm font-semibold text-slate-600">
-                  Supplier
+                  Unit Price
                 </th>
 
                 <th className="text-left p-5 text-sm font-semibold text-slate-600">
                   Status
                 </th>
 
+                <th className="text-left p-5 text-sm font-semibold text-slate-600">
+                  Actions
+                </th>
+
               </tr>
 
             </thead>
 
+
+
             <tbody>
 
-              {filteredItems.length > 0 ? (
+              {filteredItems.map(
+                (item) => (
 
-                filteredItems.map((item) => (
+                <tr
+                  key={item.ITEM_ID}
+                  className="
+                    border-t border-slate-100
+                    hover:bg-slate-50
+                    transition
+                  "
+                >
 
-                  <tr
-                    key={item.ITEM_ID}
-                    className="
-                      border-t border-slate-100
-                      hover:bg-slate-50
-                      transition
-                    "
-                  >
+                  {/* ITEM */}
+                  <td className="p-5">
 
-                    {/* ITEM */}
-                    <td className="p-5">
+                    <div className="flex items-center gap-4">
 
-                      <div className="flex items-center gap-4">
-
-                        <div
-                          className="
-                            h-12 w-12
-                            rounded-2xl
-                            bg-emerald-100
-                            flex items-center justify-center
-                            text-emerald-700
-                            font-bold
-                          "
-                        >
-                          {item.ITEM_NAME?.charAt(0)}
-                        </div>
-
-                        <div>
-
-                          <h3 className="font-semibold text-slate-900">
-                            {item.ITEM_NAME}
-                          </h3>
-
-                          <p className="text-sm text-slate-500">
-                            ID #{item.ITEM_ID}
-                          </p>
-
-                        </div>
-
-                      </div>
-
-                    </td>
-
-                    {/* CATEGORY */}
-                    <td className="p-5 text-slate-700">
-                      {item.CATEGORY}
-                    </td>
-
-                    {/* QUANTITY */}
-                    <td className="p-5">
-
-                      <div className="font-semibold text-slate-900">
-                        {item.QUANTITY} {item.UNIT}
-                      </div>
-
-                    </td>
-
-                    {/* EXPIRY */}
-                    <td className="p-5">
-
-                      <div className="flex items-center gap-2 text-slate-700">
-
-                        <CalendarDays
-                          size={16}
-                          className="text-slate-400"
-                        />
-
-                        {item.EXPIRY_DATE?.split('T')[0]}
-
-                      </div>
-
-                    </td>
-
-                    {/* SUPPLIER */}
-                    <td className="p-5">
-
-                      <div className="flex items-center gap-2 text-slate-700">
-
-                        <Truck
-                          size={16}
-                          className="text-slate-400"
-                        />
-
-                        {item.SUPPLIER_NAME}
-
-                      </div>
-
-                    </td>
-
-                    {/* STATUS */}
-                    <td className="p-5">
-
-                      <span
-                        className={`
-                          px-3 py-1
-                          rounded-full
-                          text-xs font-semibold
-                          ${getStatusStyle(item.STATUS)}
-                        `}
+                      <div
+                        className="
+                          h-12 w-12
+                          rounded-2xl
+                          bg-emerald-100
+                          flex items-center justify-center
+                          text-emerald-700
+                          font-bold
+                        "
                       >
-                        {item.STATUS}
-                      </span>
+                        {item.ITEM_NAME?.charAt(0)}
+                      </div>
 
-                    </td>
+                      <div>
 
-                  </tr>
+                        <h3 className="font-semibold text-slate-900">
+                          {item.ITEM_NAME}
+                        </h3>
 
-                ))
+                        <p className="text-sm text-slate-500">
+                          ID #{item.ITEM_ID}
+                        </p>
 
-              ) : (
+                      </div>
 
-                <tr>
-
-                  <td
-                    colSpan={6}
-                    className="text-center p-16"
-                  >
-
-                    <div
-                      className="
-                        h-20 w-20
-                        rounded-full
-                        bg-slate-100
-                        flex items-center justify-center
-                        mx-auto mb-5
-                      "
-                    >
-                      <Boxes
-                        className="text-slate-400"
-                        size={36}
-                      />
                     </div>
 
-                    <h3 className="text-xl font-bold text-slate-900">
-                      No Inventory Found
-                    </h3>
+                  </td>
 
-                    <p className="text-slate-500 mt-2">
-                      No inventory records available.
-                    </p>
+
+
+                  {/* QUANTITY */}
+                  <td className="p-5">
+
+                    <div className="font-semibold text-slate-900">
+                      {item.QUANTITY}
+                    </div>
+
+                  </td>
+
+
+
+                  {/* PRICE */}
+                  <td className="p-5">
+
+                    <div className="font-semibold text-slate-900">
+                      Rs. {item.UNIT_PRICE}
+                    </div>
+
+                  </td>
+
+
+
+                  {/* STATUS */}
+                  <td className="p-5">
+
+                    <span
+                      className={`
+                        px-3 py-1
+                        rounded-full
+                        text-xs font-semibold
+                        ${getStatusStyle(
+                          item.STATUS
+                        )}
+                      `}
+                    >
+                      {item.STATUS}
+                    </span>
+
+                  </td>
+
+
+
+                  {/* ACTIONS */}
+                  <td className="p-5">
+
+                    <button
+                      onClick={async () => {
+
+                        const confirmDelete =
+                          confirm(
+                            'Delete inventory item?'
+                          );
+
+                        if (!confirmDelete)
+                          return;
+
+                        try {
+
+                          await fetch(
+                            `/api/inventory/${item.ITEM_ID}`,
+                            {
+                              method:
+                                'DELETE',
+                            }
+                          );
+
+                          fetchInventory();
+
+                        } catch (error) {
+
+                          console.error(
+                            error
+                          );
+
+                        }
+                      }}
+                      className="
+                        flex items-center gap-2
+                        px-4 py-2
+                        rounded-xl
+                        bg-red-100
+                        text-red-700
+                        hover:bg-red-200
+                        transition
+                      "
+                    >
+
+                      <Trash2
+                        size={16}
+                      />
+
+                      Delete
+
+                    </button>
 
                   </td>
 
                 </tr>
 
-              )}
+              ))}
 
             </tbody>
 

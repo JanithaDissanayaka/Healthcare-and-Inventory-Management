@@ -11,14 +11,12 @@ export async function GET() {
 
   try {
 
-    connection = await getConnection();
+    connection =
+      await getConnection();
 
 
 
-    // =====================================================
     // TOTAL PATIENTS
-    // =====================================================
-
     const patientResult =
       await connection.execute(
         `
@@ -34,10 +32,7 @@ export async function GET() {
 
 
 
-    // =====================================================
     // TOTAL DOCTORS
-    // =====================================================
-
     const doctorResult =
       await connection.execute(
         `
@@ -53,10 +48,7 @@ export async function GET() {
 
 
 
-    // =====================================================
     // TOTAL APPOINTMENTS
-    // =====================================================
-
     const appointmentResult =
       await connection.execute(
         `
@@ -72,16 +64,13 @@ export async function GET() {
 
 
 
-    // =====================================================
     // TOTAL REVENUE
-    // ADVANCED AGGREGATE QUERY
-    // =====================================================
-
     const revenueResult =
       await connection.execute(
         `
         SELECT
-          NVL(SUM(COST),0) AS TOTAL
+          NVL(SUM(COST),0)
+          AS TOTAL
         FROM TREATMENT
         `,
         [],
@@ -93,41 +82,23 @@ export async function GET() {
 
 
 
-    // =====================================================
-    // INNER JOIN QUERY
-    // APPOINTMENT DETAILS VIEW
-    // =====================================================
-
-    const appointmentDetails =
-      await connection.execute(
-        `
-        SELECT *
-        FROM VW_APPOINTMENT_DETAILS
-        ORDER BY APPOINTMENT_ID DESC
-        FETCH FIRST 5 ROWS ONLY
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // =====================================================
     // LATEST PATIENTS
-    // =====================================================
-
     const latestPatients =
       await connection.execute(
         `
         SELECT
           PATIENT_ID,
-          NAME,
+
+          FIRST_NAME || ' ' ||
+          LAST_NAME
+          AS NAME,
+
           PHONE
+
         FROM PATIENT
+
         ORDER BY PATIENT_ID DESC
+
         FETCH FIRST 5 ROWS ONLY
         `,
         [],
@@ -139,19 +110,22 @@ export async function GET() {
 
 
 
-    // =====================================================
     // LATEST DOCTORS
-    // =====================================================
-
     const latestDoctors =
       await connection.execute(
         `
         SELECT
           DOCTOR_ID,
-          NAME,
+
+          DOCTOR_NAME
+          AS NAME,
+
           SPECIALIZATION
+
         FROM DOCTOR
+
         ORDER BY DOCTOR_ID DESC
+
         FETCH FIRST 5 ROWS ONLY
         `,
         [],
@@ -163,132 +137,28 @@ export async function GET() {
 
 
 
-    // =====================================================
-    // GROUP BY QUERY
-    // =====================================================
-
-    const appointmentStats =
-      await connection.execute(
-        `
-        SELECT
-          STATUS,
-          COUNT(*) AS TOTAL
-        FROM APPOINTMENT
-        GROUP BY STATUS
-        HAVING COUNT(*) > 0
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // =====================================================
-    // SUBQUERY
-    // MOST ACTIVE DOCTOR
-    // =====================================================
-
-    const activeDoctor =
-      await connection.execute(
-        `
-        SELECT NAME
-        FROM DOCTOR
-        WHERE DOCTOR_ID = (
-
-            SELECT DOCTOR_ID
-
-            FROM (
-
-                SELECT
-                    DOCTOR_ID,
-                    COUNT(*) TOTAL
-
-                FROM APPOINTMENT
-
-                GROUP BY DOCTOR_ID
-
-                ORDER BY COUNT(*) DESC
-
-            )
-
-            WHERE ROWNUM = 1
-
-        )
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // =====================================================
-    // LEFT JOIN QUERY
-    // =====================================================
-
-    const patientsWithoutAppointments =
-      await connection.execute(
-        `
-        SELECT
-          P.NAME
-        FROM PATIENT P
-
-        LEFT JOIN APPOINTMENT A
-        ON P.PATIENT_ID = A.PATIENT_ID
-
-        WHERE A.APPOINTMENT_ID IS NULL
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // =====================================================
-    // FUNCTION QUERY
-    // =====================================================
-
-    const totalAppointmentsForDoctor =
-      await connection.execute(
-        `
-        SELECT
-          GET_TOTAL_APPOINTMENTS(1)
-          AS TOTAL
-        FROM DUAL
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // =====================================================
-    // ANALYTICS CHART QUERY
-    // =====================================================
-
+    // MONTHLY PATIENT ANALYTICS
     const monthlyPatients =
       await connection.execute(
         `
         SELECT
-          TO_CHAR(DOB, 'MON') AS MONTH,
+          TO_CHAR(
+            REGISTER_DATE,
+            'MON'
+          ) AS MONTH,
+
           COUNT(*) AS PATIENTS
 
         FROM PATIENT
 
-        GROUP BY TO_CHAR(DOB, 'MON')
+        GROUP BY
+          TO_CHAR(
+            REGISTER_DATE,
+            'MON'
+          )
 
-        ORDER BY MIN(DOB)
+        ORDER BY
+          MIN(REGISTER_DATE)
         `,
         [],
         {
@@ -301,29 +171,27 @@ export async function GET() {
 
     return NextResponse.json({
 
-
-
-      // =====================================================
-      // DASHBOARD COUNTS
-      // =====================================================
-
       totalPatients:
-        (patientResult.rows?.[0] as any)?.TOTAL || 0,
+        (patientResult
+          .rows?.[0] as any)
+          ?.TOTAL || 0,
 
       totalDoctors:
-        (doctorResult.rows?.[0] as any)?.TOTAL || 0,
+        (doctorResult
+          .rows?.[0] as any)
+          ?.TOTAL || 0,
 
       totalAppointments:
-        (appointmentResult.rows?.[0] as any)?.TOTAL || 0,
+        (appointmentResult
+          .rows?.[0] as any)
+          ?.TOTAL || 0,
 
       totalRevenue:
-        (revenueResult.rows?.[0] as any)?.TOTAL || 0,
+        (revenueResult
+          .rows?.[0] as any)
+          ?.TOTAL || 0,
 
 
-
-      // =====================================================
-      // DATA TABLES
-      // =====================================================
 
       latestPatients:
         latestPatients.rows || [],
@@ -331,44 +199,15 @@ export async function GET() {
       latestDoctors:
         latestDoctors.rows || [],
 
-      appointmentDetails:
-        appointmentDetails.rows || [],
 
-      appointmentStats:
-        appointmentStats.rows || [],
-
-      patientsWithoutAppointments:
-        patientsWithoutAppointments.rows || [],
-
-
-
-      // =====================================================
-      // SUBQUERY RESULT
-      // =====================================================
-
-      mostActiveDoctor:
-        activeDoctor.rows || [],
-
-
-
-      // =====================================================
-      // FUNCTION RESULT
-      // =====================================================
-
-      totalAppointmentsForDoctor:
-        totalAppointmentsForDoctor.rows || [],
-
-
-
-      // =====================================================
-      // CHART DATA
-      // =====================================================
 
       monthlyPatients:
-        monthlyPatients.rows?.map((item: any) => ({
-          month: item.MONTH,
-          patients: item.PATIENTS,
-        })) || [],
+        monthlyPatients.rows
+          ?.map((item: any) => ({
+            month: item.MONTH,
+            patients:
+              item.PATIENTS,
+          })) || [],
 
     });
 
@@ -378,7 +217,8 @@ export async function GET() {
 
     return NextResponse.json(
       {
-        error: "Dashboard error",
+        error:
+          "Dashboard error",
       },
       {
         status: 500,

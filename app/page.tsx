@@ -34,7 +34,7 @@ type Doctor = {
   SPECIALIZATION: string;
 };
 
-type WeeklyPatients = {
+type MonthlyPatients = {
   month: string;
   patients: number;
 };
@@ -48,7 +48,7 @@ type DashboardData = {
   latestPatients: Patient[];
   latestDoctors: Doctor[];
 
-  weeklyPatients: WeeklyPatients[];
+  monthlyPatients: MonthlyPatients[];
 };
 
 const StatCard = ({
@@ -64,7 +64,9 @@ const StatCard = ({
   color: string;
   growth: string;
 }) => {
+
   return (
+
     <div
       className="
         relative overflow-hidden
@@ -77,8 +79,11 @@ const StatCard = ({
         transition-all duration-300
       "
     >
+
       <div className="flex items-start justify-between">
+
         <div>
+
           <p className="text-sm text-slate-500 font-medium">
             {title}
           </p>
@@ -88,9 +93,13 @@ const StatCard = ({
           </h2>
 
           <div className="flex items-center gap-1 mt-4 text-emerald-600 text-sm font-medium">
+
             <ArrowUpRight size={16} />
+
             {growth}
+
           </div>
+
         </div>
 
         <div
@@ -102,37 +111,64 @@ const StatCard = ({
         >
           {icon}
         </div>
+
       </div>
 
-      <div className="absolute -right-8 -bottom-8 h-32 w-32 bg-slate-100 rounded-full opacity-40"></div>
+      <div
+        className="
+          absolute
+          -right-8
+          -bottom-8
+          h-32 w-32
+          bg-slate-100
+          rounded-full
+          opacity-40
+        "
+      ></div>
+
     </div>
   );
 };
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData>({
-    totalPatients: 0,
-    totalDoctors: 0,
-    totalAppointments: 0,
-    totalRevenue: 0,
 
-    latestPatients: [],
-    latestDoctors: [],
+  const [data, setData] =
+    useState<DashboardData>({
+      totalPatients: 0,
+      totalDoctors: 0,
+      totalAppointments: 0,
+      totalRevenue: 0,
 
-    weeklyPatients: [],
-  });
+      latestPatients: [],
+      latestDoctors: [],
 
-  const [loading, setLoading] = useState(true);
+      monthlyPatients: [],
+    });
+
+  const [loading, setLoading] =
+    useState(true);
+
+
 
   useEffect(() => {
     fetchDashboard();
   }, []);
 
-  const fetchDashboard = async () => {
-    try {
-      const res = await fetch('/api/dashboard');
 
-      const dashboardData = await res.json();
+
+
+  const fetchDashboard =
+    async () => {
+
+    try {
+
+      const res =
+        await fetch(
+          '/api/dashboard'
+        );
+
+      const dashboardData =
+        await res.json();
 
       setData({
         totalPatients:
@@ -153,30 +189,52 @@ export default function DashboardPage() {
         latestDoctors:
           dashboardData.latestDoctors || [],
 
-        weeklyPatients:
-          dashboardData.weeklyPatients || [],
+        monthlyPatients:
+          dashboardData.monthlyPatients || [],
       });
+
     } catch (error) {
+
       console.error(error);
+
     } finally {
+
       setLoading(false);
+
     }
   };
 
+
+
   if (loading) {
+
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+
+      <div
+        className="
+          min-h-screen
+          bg-slate-50
+          flex items-center justify-center
+        "
+      >
+
         <div className="text-slate-600 text-lg font-medium">
           Loading Dashboard...
         </div>
+
       </div>
     );
   }
 
+
+
   return (
+
     <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
+
       {/* STATS */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+
         <StatCard
           title="Total Patients"
           value={data.totalPatients}
@@ -184,6 +242,8 @@ export default function DashboardPage() {
           color="bg-emerald-100 text-emerald-600"
           icon={<Users size={30} />}
         />
+
+
 
         <StatCard
           title="Doctors"
@@ -193,6 +253,8 @@ export default function DashboardPage() {
           icon={<Stethoscope size={30} />}
         />
 
+
+
         <StatCard
           title="Appointments"
           value={data.totalAppointments}
@@ -201,6 +263,8 @@ export default function DashboardPage() {
           icon={<CalendarDays size={30} />}
         />
 
+
+
         <StatCard
           title="Revenue"
           value={`Rs. ${data.totalRevenue}`}
@@ -208,12 +272,17 @@ export default function DashboardPage() {
           color="bg-orange-100 text-orange-600"
           icon={<Wallet size={30} />}
         />
+
       </div>
+
+
 
       {/* MAIN GRID */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* LEFT SIDE */}
+
+        {/* LEFT */}
         <div className="xl:col-span-2 space-y-8">
+
           {/* CHART */}
           <div
             className="
@@ -224,26 +293,44 @@ export default function DashboardPage() {
               shadow-sm
             "
           >
+
             <div className="flex items-center justify-between mb-8">
+
               <div>
+
                 <h2 className="text-2xl font-bold text-slate-900">
                   Patient Analytics
                 </h2>
 
                 <p className="text-slate-500 mt-1">
-                  Weekly patient registrations
+                  Monthly patient registrations
                 </p>
+
               </div>
 
               <div className="flex items-center gap-2 text-emerald-600 font-semibold">
+
                 <Activity size={18} />
+
                 Live Report
+
               </div>
+
             </div>
 
-            <ResponsiveContainer width="100%" height={320}>
-              <AreaChart data={data.weeklyPatients}>
+
+
+            <ResponsiveContainer
+              width="100%"
+              height={320}
+            >
+
+              <AreaChart
+                data={data.monthlyPatients}
+              >
+
                 <defs>
+
                   <linearGradient
                     id="colorPatients"
                     x1="0"
@@ -251,6 +338,7 @@ export default function DashboardPage() {
                     x2="0"
                     y2="1"
                   >
+
                     <stop
                       offset="5%"
                       stopColor="#10B981"
@@ -262,7 +350,9 @@ export default function DashboardPage() {
                       stopColor="#10B981"
                       stopOpacity={0}
                     />
+
                   </linearGradient>
+
                 </defs>
 
                 <XAxis dataKey="month" />
@@ -277,9 +367,14 @@ export default function DashboardPage() {
                   fillOpacity={1}
                   fill="url(#colorPatients)"
                 />
+
               </AreaChart>
+
             </ResponsiveContainer>
+
           </div>
+
+
 
           {/* RECENT PATIENTS */}
           <div
@@ -291,80 +386,88 @@ export default function DashboardPage() {
               shadow-sm
             "
           >
+
             <div className="flex items-center justify-between mb-8">
+
               <div>
+
                 <h2 className="text-2xl font-bold text-slate-900">
                   Recent Patients
                 </h2>
 
-                <p className="text-slate-500 mt-1">
-                  Latest hospital registrations
-                </p>
               </div>
 
               <Link
                 href="/patients"
-                className="text-emerald-600 font-semibold hover:text-emerald-700"
+                className="
+                  text-emerald-600
+                  font-semibold
+                "
               >
                 View All →
               </Link>
+
             </div>
+
+
 
             <div className="space-y-5">
-              {data.latestPatients.length > 0 ? (
-                data.latestPatients.map((patient) => (
-                  <div
-                    key={patient.PATIENT_ID}
-                    className="
-                      flex items-center justify-between
-                      p-5 rounded-2xl
-                      border border-slate-100
-                      hover:border-emerald-200
-                      hover:bg-emerald-50/40
-                      transition-all
-                    "
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className="
-                          h-14 w-14 rounded-2xl
-                          bg-emerald-100
-                          flex items-center justify-center
-                          text-emerald-700
-                          font-bold text-lg
-                        "
-                      >
-                        {patient.NAME?.charAt(0)}
-                      </div>
 
-                      <div>
-                        <h3 className="font-semibold text-slate-900">
-                          {patient.NAME}
-                        </h3>
+              {data.latestPatients.map(
+                (patient) => (
 
-                        <p className="text-sm text-slate-500 mt-1">
-                          {patient.PHONE}
-                        </p>
-                      </div>
+                <div
+                  key={patient.PATIENT_ID}
+                  className="
+                    flex items-center justify-between
+                    p-5 rounded-2xl
+                    border border-slate-100
+                  "
+                >
+
+                  <div className="flex items-center gap-4">
+
+                    <div
+                      className="
+                        h-14 w-14 rounded-2xl
+                        bg-emerald-100
+                        flex items-center justify-center
+                        text-emerald-700
+                        font-bold text-lg
+                      "
+                    >
+                      {patient.NAME?.charAt(0)}
                     </div>
 
-                    <ArrowUpRight
-                      className="text-slate-400"
-                      size={20}
-                    />
+                    <div>
+
+                      <h3 className="font-semibold text-slate-900">
+                        {patient.NAME}
+                      </h3>
+
+                      <p className="text-sm text-slate-500 mt-1">
+                        {patient.PHONE}
+                      </p>
+
+                    </div>
+
                   </div>
-                ))
-              ) : (
-                <p className="text-slate-500">
-                  No recent patients
-                </p>
-              )}
+
+                </div>
+
+              ))}
+
             </div>
+
           </div>
+
         </div>
 
-        {/* RIGHT SIDE */}
+
+
+        {/* RIGHT */}
         <div className="space-y-8">
+
           {/* DOCTORS */}
           <div
             className="
@@ -375,83 +478,82 @@ export default function DashboardPage() {
               shadow-sm
             "
           >
+
             <div className="flex items-center justify-between mb-8">
+
               <div>
+
                 <h2 className="text-2xl font-bold text-slate-900">
                   Doctors
                 </h2>
 
-                <p className="text-slate-500 mt-1">
-                  Available specialists
-                </p>
               </div>
 
               <Link
                 href="/doctors"
-                className="text-cyan-600 font-semibold"
+                className="
+                  text-cyan-600
+                  font-semibold
+                "
               >
                 View All →
               </Link>
+
             </div>
 
+
+
             <div className="space-y-5">
-              {data.latestDoctors.length > 0 ? (
-                data.latestDoctors.map((doctor) => (
-                  <div
-                    key={doctor.DOCTOR_ID}
-                    className="
-                      flex items-center justify-between
-                      p-4 rounded-2xl
-                      border border-slate-100
-                      hover:border-cyan-200
-                      hover:bg-cyan-50/40
-                      transition-all
-                    "
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className="
-                          h-14 w-14 rounded-2xl
-                          bg-cyan-100
-                          flex items-center justify-center
-                          text-cyan-700
-                          font-bold
-                        "
-                      >
-                        {doctor.NAME?.charAt(0)}
-                      </div>
 
-                      <div>
-                        <h3 className="font-semibold text-slate-900">
-                          {doctor.NAME}
-                        </h3>
+              {data.latestDoctors.map(
+                (doctor) => (
 
-                        <p className="text-sm text-slate-500 mt-1">
-                          {doctor.SPECIALIZATION}
-                        </p>
-                      </div>
-                    </div>
+                <div
+                  key={doctor.DOCTOR_ID}
+                  className="
+                    flex items-center justify-between
+                    p-4 rounded-2xl
+                    border border-slate-100
+                  "
+                >
+
+                  <div className="flex items-center gap-4">
 
                     <div
                       className="
-                        px-3 py-1
-                        rounded-full
+                        h-14 w-14 rounded-2xl
                         bg-cyan-100
+                        flex items-center justify-center
                         text-cyan-700
-                        text-xs font-semibold
+                        font-bold
                       "
                     >
-                      Active
+                      {doctor.NAME?.charAt(0)}
                     </div>
+
+                    <div>
+
+                      <h3 className="font-semibold text-slate-900">
+                        {doctor.NAME}
+                      </h3>
+
+                      <p className="text-sm text-slate-500 mt-1">
+                        {doctor.SPECIALIZATION}
+                      </p>
+
+                    </div>
+
                   </div>
-                ))
-              ) : (
-                <p className="text-slate-500">
-                  No doctors found
-                </p>
-              )}
+
+                </div>
+
+              ))}
+
             </div>
+
           </div>
+
+
 
           {/* QUICK ACTIONS */}
           <div
@@ -463,26 +565,31 @@ export default function DashboardPage() {
               shadow-sm
             "
           >
+
             <h2 className="text-2xl font-bold text-slate-900 mb-6">
               Quick Actions
             </h2>
 
             <div className="grid grid-cols-2 gap-4">
+
               <Link
                 href="/patients/add"
                 className="
                   p-5 rounded-2xl
                   bg-emerald-50
                   hover:bg-emerald-100
-                  transition
                 "
               >
+
                 <Users className="text-emerald-600 mb-3" />
 
                 <h3 className="font-semibold text-slate-900">
                   Add Patient
                 </h3>
+
               </Link>
+
+
 
               <Link
                 href="/appointments/add"
@@ -490,49 +597,22 @@ export default function DashboardPage() {
                   p-5 rounded-2xl
                   bg-indigo-50
                   hover:bg-indigo-100
-                  transition
                 "
               >
+
                 <CalendarDays className="text-indigo-600 mb-3" />
 
                 <h3 className="font-semibold text-slate-900">
                   Appointments
                 </h3>
+
               </Link>
 
-              <Link
-                href="/billing"
-                className="
-                  p-5 rounded-2xl
-                  bg-orange-50
-                  hover:bg-orange-100
-                  transition
-                "
-              >
-                <Wallet className="text-orange-600 mb-3" />
-
-                <h3 className="font-semibold text-slate-900">
-                  Billing
-                </h3>
-              </Link>
-
-              <Link
-                href="/reports"
-                className="
-                  p-5 rounded-2xl
-                  bg-cyan-50
-                  hover:bg-cyan-100
-                  transition
-                "
-              >
-                <Activity className="text-cyan-600 mb-3" />
-
-                <h3 className="font-semibold text-slate-900">
-                  Reports
-                </h3>
-              </Link>
             </div>
+
           </div>
+
+
 
           {/* SYSTEM STATUS */}
           <div
@@ -544,16 +624,23 @@ export default function DashboardPage() {
               shadow-sm
             "
           >
+
             <div className="flex items-center gap-3 mb-6">
+
               <Clock3 className="text-emerald-600" />
 
               <h2 className="text-2xl font-bold text-slate-900">
                 System Status
               </h2>
+
             </div>
 
+
+
             <div className="space-y-5">
+
               <div className="flex items-center justify-between">
+
                 <p className="text-slate-600">
                   Database
                 </p>
@@ -568,9 +655,13 @@ export default function DashboardPage() {
                 >
                   Online
                 </span>
+
               </div>
 
+
+
               <div className="flex items-center justify-between">
+
                 <p className="text-slate-600">
                   API Services
                 </p>
@@ -585,28 +676,17 @@ export default function DashboardPage() {
                 >
                   Active
                 </span>
+
               </div>
 
-              <div className="flex items-center justify-between">
-                <p className="text-slate-600">
-                  Server Status
-                </p>
-
-                <span
-                  className="
-                    px-3 py-1 rounded-full
-                    bg-emerald-100
-                    text-emerald-700
-                    text-sm font-semibold
-                  "
-                >
-                  Healthy
-                </span>
-              </div>
             </div>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
   );
 }

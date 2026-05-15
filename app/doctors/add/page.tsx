@@ -6,14 +6,14 @@ import {
   User,
   Stethoscope,
   Phone,
-  Award,
   Mail,
-  MapPin,
   Save,
   BriefcaseMedical,
+  DollarSign,
 } from 'lucide-react';
 
 export default function AddDoctorPage() {
+
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -21,27 +21,34 @@ export default function AddDoctorPage() {
     specialization: '',
     phone: '',
     email: '',
-    address: '',
-    experience: '',
+    salary: '',
   });
+
+
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
+
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+
   };
+
+
 
   const handleSubmit = async (
     e: React.FormEvent
   ) => {
+
     e.preventDefault();
 
     setLoading(true);
 
     try {
+
       const res = await fetch('/api/doctors', {
         method: 'POST',
 
@@ -61,20 +68,28 @@ export default function AddDoctorPage() {
         specialization: '',
         phone: '',
         email: '',
-        address: '',
-        experience: '',
+        salary: '',
       });
+
     } catch (error) {
+
       console.error(error);
 
       alert('Error adding doctor');
+
     } finally {
+
       setLoading(false);
+
     }
   };
 
+
+
   return (
+
     <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
+
       <div
         className="
           bg-white
@@ -84,6 +99,7 @@ export default function AddDoctorPage() {
           overflow-hidden
         "
       >
+
         {/* TOP SECTION */}
         <div
           className="
@@ -93,7 +109,7 @@ export default function AddDoctorPage() {
             relative
           "
         >
-          {/* DECORATION */}
+
           <div
             className="
               absolute
@@ -115,7 +131,7 @@ export default function AddDoctorPage() {
           ></div>
 
           <div className="relative flex items-center gap-5">
-            {/* ICON */}
+
             <div
               className="
                 h-16 w-16
@@ -125,14 +141,16 @@ export default function AddDoctorPage() {
                 flex items-center justify-center
               "
             >
+
               <BriefcaseMedical
                 className="text-cyan-600"
                 size={28}
               />
+
             </div>
 
-            {/* TEXT */}
             <div>
+
               <h2 className="text-3xl font-bold text-slate-900">
                 Doctor Registration
               </h2>
@@ -140,18 +158,25 @@ export default function AddDoctorPage() {
               <p className="text-slate-500 mt-2 text-base">
                 Register new doctors into the healthcare system.
               </p>
+
             </div>
+
           </div>
+
         </div>
+
+
 
         {/* FORM */}
         <div className="p-6 lg:p-10">
+
           <form
             onSubmit={handleSubmit}
             className="space-y-8"
           >
-            {/* GRID */}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
               <InputField
                 label="Doctor Name"
                 name="name"
@@ -160,6 +185,8 @@ export default function AddDoctorPage() {
                 icon={<User size={18} />}
                 placeholder="Dr. John Doe"
               />
+
+
 
               <InputField
                 label="Specialization"
@@ -170,6 +197,8 @@ export default function AddDoctorPage() {
                 placeholder="Cardiology"
               />
 
+
+
               <InputField
                 label="Phone Number"
                 name="phone"
@@ -178,6 +207,8 @@ export default function AddDoctorPage() {
                 icon={<Phone size={18} />}
                 placeholder="+94 77 123 4567"
               />
+
+
 
               <InputField
                 label="Email Address"
@@ -189,29 +220,25 @@ export default function AddDoctorPage() {
                 type="email"
               />
 
+
+
               <InputField
-                label="Experience Years"
-                name="experience"
-                value={formData.experience}
+                label="Salary"
+                name="salary"
+                value={formData.salary}
                 onChange={handleChange}
-                icon={<Award size={18} />}
-                placeholder="10"
+                icon={<DollarSign size={18} />}
+                placeholder="250000"
                 type="number"
               />
 
-              <InputField
-                label="Clinic Address"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                icon={<MapPin size={18} />}
-                placeholder="Colombo, Sri Lanka"
-              />
             </div>
+
+
 
             {/* BUTTONS */}
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
-              {/* SUBMIT */}
+
               <button
                 type="submit"
                 disabled={loading}
@@ -228,47 +255,28 @@ export default function AddDoctorPage() {
                   disabled:opacity-70
                 "
               >
+
                 <Save size={20} />
 
                 {loading
                   ? 'Adding Doctor...'
                   : 'Add Doctor'}
+
               </button>
 
-              {/* RESET */}
-              <button
-                type="reset"
-                onClick={() =>
-                  setFormData({
-                    name: '',
-                    specialization: '',
-                    phone: '',
-                    email: '',
-                    address: '',
-                    experience: '',
-                  })
-                }
-                className="
-                  flex-1
-                  py-4
-                  rounded-2xl
-                  border border-slate-200
-                  bg-white
-                  hover:bg-slate-50
-                  text-slate-700
-                  font-semibold
-                  transition
-                "
-              >
-                Reset Form
-              </button>
             </div>
+
           </form>
+
         </div>
+
       </div>
+
     </div>
   );
 }
+
+
 
 /* INPUT FIELD */
 
@@ -291,12 +299,15 @@ const InputField = ({
   placeholder: string;
   type?: string;
 }) => (
+
   <div>
+
     <label className="block text-sm font-semibold text-slate-700 mb-3">
       {label}
     </label>
 
     <div className="relative">
+
       <div
         className="
           absolute
@@ -329,6 +340,8 @@ const InputField = ({
           focus:border-transparent
         "
       />
+
     </div>
+
   </div>
 );

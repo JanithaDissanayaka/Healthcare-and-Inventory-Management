@@ -3,7 +3,10 @@ import oracledb from "oracledb";
 import { getConnection } from "@/lib/db";
 
 
+
+// ======================================
 // GET ALL APPOINTMENTS
+// ======================================
 export async function GET() {
 
   let connection;
@@ -16,28 +19,98 @@ export async function GET() {
       `
       SELECT
         a.APPOINTMENT_ID,
-        p.NAME AS PATIENT_NAME,
-        d.NAME AS DOCTOR_NAME,
-        a.CLINIC_ID,
+
+        p.FIRST_NAME || ' ' || p.LAST_NAME
+        AS PATIENT_NAME,
+
+        d.DOCTOR_NAME
+        AS DOCTOR_NAME,
+
         a.APPOINTMENT_DATE,
-        a.APPOINTMENT_TIME,
+
         a.STATUS
+
       FROM APPOINTMENT a
-      JOIN PATIENT p
+
+      INNER JOIN PATIENT p
         ON a.PATIENT_ID = p.PATIENT_ID
-      JOIN DOCTOR d
+
+      INNER JOIN DOCTOR d
         ON a.DOCTOR_ID = d.DOCTOR_ID
+
       ORDER BY a.APPOINTMENT_ID DESC
       `,
       [],
       {
-        outFormat: oracledb.OUT_FORMAT_OBJECT,
+        outFormat:
+          oracledb.OUT_FORMAT_OBJECT,
       }
     );
 
-    return NextResponse.json(
-      result.rows || []
-    );
+
+
+    // ANALYTICS
+    const analyticsResult =
+      await connection.execute(
+        `
+        SELECT
+          d.DOCTOR_NAME,
+          COUNT(a.APPOINTMENT_ID)
+          AS TOTAL_APPOINTMENTS
+
+        FROM DOCTOR d
+
+        LEFT JOIN APPOINTMENT a
+          ON d.DOCTOR_ID =
+             a.DOCTOR_ID
+
+        GROUP BY d.DOCTOR_NAME
+
+        ORDER BY
+          TOTAL_APPOINTMENTS DESC
+        `,
+        [],
+        {
+          outFormat:
+            oracledb.OUT_FORMAT_OBJECT,
+        }
+      );
+
+
+
+    // BUSY DOCTORS
+    const busyDoctors =
+      await connection.execute(
+        `
+        SELECT DOCTOR_NAME
+        FROM DOCTOR
+        WHERE DOCTOR_ID IN
+        (
+          SELECT DOCTOR_ID
+          FROM APPOINTMENT
+          GROUP BY DOCTOR_ID
+          HAVING COUNT(*) > 5
+        )
+        `,
+        [],
+        {
+          outFormat:
+            oracledb.OUT_FORMAT_OBJECT,
+        }
+      );
+
+
+
+    return NextResponse.json({
+      appointments:
+        result.rows || [],
+
+      analytics:
+        analyticsResult.rows || [],
+
+      busyDoctors:
+        busyDoctors.rows || [],
+    });
 
   } catch (error) {
 
@@ -62,53 +135,67 @@ export async function GET() {
 
 
 
+// ======================================
 // ADD APPOINTMENT
-export async function POST(req: Request) {
+// ======================================
+export async function POST(
+  req: Request
+) {
 
   let connection;
 
   try {
 
-    const body = await req.json();
+    const body =
+      await req.json();
 
-    connection = await getConnection();
+    connection =
+      await getConnection();
+
+
 
     await connection.execute(
       `
       INSERT INTO APPOINTMENT
       (
+        APPOINTMENT_ID,
         PATIENT_ID,
         DOCTOR_ID,
-        CLINIC_ID,
         APPOINTMENT_DATE,
-        APPOINTMENT_TIME,
         STATUS
       )
       VALUES
       (
+        APPOINTMENT_SEQ.NEXTVAL,
         :patientId,
         :doctorId,
-        :clinicId,
-        TO_DATE(:dateValue, 'YYYY-MM-DD'),
-        :timeValue,
+        TO_DATE(:dateValue,'YYYY-MM-DD'),
         :status
       )
       `,
       {
-        patientId: body.patientId,
-        doctorId: body.doctorId,
-        clinicId: body.clinicId,
-        dateValue: body.date,
-        timeValue: body.time,
-        status: body.status,
+        patientId:
+          body.patientId,
+
+        doctorId:
+          body.doctorId,
+
+        dateValue:
+          body.date,
+
+        status:
+          body.status,
       },
       {
         autoCommit: true,
       }
     );
 
+
+
     return NextResponse.json({
-      message: "Appointment added successfully",
+      message:
+        "Appointment added successfully",
     });
 
   } catch (error) {

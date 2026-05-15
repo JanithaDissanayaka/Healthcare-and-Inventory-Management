@@ -3,7 +3,10 @@ import oracledb from "oracledb";
 import { getConnection } from "@/lib/db";
 
 
+
+// ===============================
 // GET ALL PATIENTS
+// ===============================
 export async function GET() {
 
   let connection;
@@ -12,15 +15,66 @@ export async function GET() {
 
     connection = await getConnection();
 
-    const result = await connection.execute(
-      `SELECT * FROM PATIENT`,
+    const patients = await connection.execute(
+      `
+      SELECT
+        PATIENT_ID,
+        FIRST_NAME || ' ' || LAST_NAME AS NAME,
+        DOB,
+        GENDER,
+        PHONE,
+        ADDRESS
+      FROM PATIENT
+      ORDER BY PATIENT_ID DESC
+      `,
       [],
       {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
       }
     );
 
-    return NextResponse.json(result.rows || []);
+
+
+    const genderStats = await connection.execute(
+      `
+      SELECT
+        GENDER,
+        COUNT(*) AS TOTAL
+      FROM PATIENT
+      GROUP BY GENDER
+      `,
+      [],
+      {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      }
+    );
+
+
+
+    const activePatients = await connection.execute(
+      `
+      SELECT
+        FIRST_NAME || ' ' || LAST_NAME AS NAME
+      FROM PATIENT
+      WHERE PATIENT_ID IN
+      (
+        SELECT PATIENT_ID
+        FROM APPOINTMENT
+      )
+      `,
+      [],
+      {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      }
+    );
+
+
+
+    return NextResponse.json({
+      patients: patients.rows || [],
+      genderStats: genderStats.rows || [],
+      activePatients: activePatients.rows || [],
+    });
 
   } catch (error) {
 
@@ -45,7 +99,9 @@ export async function GET() {
 
 
 
+// ===============================
 // ADD PATIENT
+// ===============================
 export async function POST(req: Request) {
 
   let connection;
@@ -56,30 +112,48 @@ export async function POST(req: Request) {
 
     connection = await getConnection();
 
+
+
     await connection.execute(
       `
       INSERT INTO PATIENT
-      (Name, DOB, Gender, Phone, Address)
+      (
+        PATIENT_ID,
+        FIRST_NAME,
+        LAST_NAME,
+        DOB,
+        GENDER,
+        PHONE,
+        ADDRESS,
+        BLOOD_GROUP
+      )
       VALUES
       (
-        :name,
+        PATIENT_SEQ.NEXTVAL,
+        :firstName,
+        :lastName,
         TO_DATE(:dob, 'YYYY-MM-DD'),
         :gender,
         :phone,
-        :address
+        :address,
+        :bloodGroup
       )
       `,
       {
-        name: body.name,
+        firstName: body.firstName,
+        lastName: body.lastName,
         dob: body.dob,
-        gender: body.gender,
+        gender: body.gender.toUpperCase(),
         phone: body.phone,
         address: body.address,
+        bloodGroup: body.bloodGroup,
       },
       {
         autoCommit: true,
       }
     );
+
+
 
     return NextResponse.json({
       message: "Patient added successfully",

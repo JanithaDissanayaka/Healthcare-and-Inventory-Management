@@ -6,11 +6,9 @@ import Link from 'next/link';
 
 import {
   Users,
-  Search,
   Phone,
   MapPin,
   CalendarDays,
-  Plus,
   Eye,
   UserRound,
 } from 'lucide-react';
@@ -24,53 +22,121 @@ type Patient = {
   ADDRESS: string;
 };
 
+type GenderStat = {
+  GENDER: string;
+  TOTAL: number;
+};
+
+type ActivePatient = {
+  NAME: string;
+};
+
 export default function PatientsPage() {
+
   const [patients, setPatients] =
     useState<Patient[]>([]);
+
+  const [genderStats, setGenderStats] =
+    useState<GenderStat[]>([]);
+
+  const [activePatients, setActivePatients] =
+    useState<ActivePatient[]>([]);
 
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState('');
+
+
 
   // LOAD PATIENTS
   useEffect(() => {
     fetchPatients();
   }, []);
 
+
+
   const fetchPatients = async () => {
+
     try {
+
       const res = await fetch('/api/patients');
 
       const data = await res.json();
 
-      setPatients(Array.isArray(data) ? data : []);
+
+
+      // FIXED FOR NEW API RESPONSE
+      setPatients(
+        data.patients || []
+      );
+
+      setGenderStats(
+        data.genderStats || []
+      );
+
+      setActivePatients(
+        data.activePatients || []
+      );
+
     } catch (error) {
+
       console.error(error);
 
       setPatients([]);
+
     } finally {
+
       setLoading(false);
+
     }
   };
 
+
+
   // FILTER
   const filteredPatients = useMemo(() => {
+
     return patients.filter(
       (patient) =>
-        patient.NAME.toLowerCase().includes(
+
+        patient.NAME?.toLowerCase().includes(
           search.toLowerCase()
         ) ||
-        patient.PHONE.includes(search) ||
-        patient.ADDRESS.toLowerCase().includes(
+
+        patient.PHONE?.includes(search) ||
+
+        patient.ADDRESS?.toLowerCase().includes(
           search.toLowerCase()
         )
     );
+
   }, [patients, search]);
+
+
+
+  // GET GENDER COUNT
+  const getGenderTotal = (
+    gender: string
+  ) => {
+
+    const item = genderStats.find(
+      (g) =>
+        g.GENDER?.toLowerCase() ===
+        gender.toLowerCase()
+    );
+
+    return item?.TOTAL || 0;
+  };
+
+
 
   // LOADING
   if (loading) {
+
     return (
+
       <div className="min-h-screen bg-slate-50 p-8">
+
         <div
           className="
             bg-white
@@ -81,6 +147,7 @@ export default function PatientsPage() {
             shadow-sm
           "
         >
+
           <div
             className="
               h-14 w-14
@@ -95,13 +162,19 @@ export default function PatientsPage() {
           <p className="mt-6 text-slate-600 font-medium">
             Loading patients...
           </p>
+
         </div>
+
       </div>
     );
   }
 
+
+
   return (
+
     <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
+
       {/* TOP SECTION */}
       <div
         className="
@@ -113,11 +186,10 @@ export default function PatientsPage() {
           mb-8
         "
       >
-        {/* HEADER */}
-        
 
         {/* STATS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-8">
+
           {/* TOTAL */}
           <div
             className="
@@ -127,8 +199,11 @@ export default function PatientsPage() {
               p-5
             "
           >
+
             <div className="flex items-center justify-between">
+
               <div>
+
                 <p className="text-sm text-slate-500">
                   Total Patients
                 </p>
@@ -136,6 +211,7 @@ export default function PatientsPage() {
                 <h2 className="text-3xl font-bold text-slate-900 mt-2">
                   {patients.length}
                 </h2>
+
               </div>
 
               <div
@@ -146,13 +222,19 @@ export default function PatientsPage() {
                   flex items-center justify-center
                 "
               >
+
                 <Users
                   className="text-emerald-600"
                   size={24}
                 />
+
               </div>
+
             </div>
+
           </div>
+
+
 
           {/* MALE */}
           <div
@@ -163,21 +245,19 @@ export default function PatientsPage() {
               p-5
             "
           >
+
             <div className="flex items-center justify-between">
+
               <div>
+
                 <p className="text-sm text-slate-500">
                   Male Patients
                 </p>
 
                 <h2 className="text-3xl font-bold text-slate-900 mt-2">
-                  {
-                    patients.filter(
-                      (p) =>
-                        p.GENDER?.toLowerCase() ===
-                        'male'
-                    ).length
-                  }
+                  {getGenderTotal('male')}
                 </h2>
+
               </div>
 
               <div
@@ -188,13 +268,19 @@ export default function PatientsPage() {
                   flex items-center justify-center
                 "
               >
+
                 <UserRound
                   className="text-cyan-600"
                   size={24}
                 />
+
               </div>
+
             </div>
+
           </div>
+
+
 
           {/* FEMALE */}
           <div
@@ -205,21 +291,19 @@ export default function PatientsPage() {
               p-5
             "
           >
+
             <div className="flex items-center justify-between">
+
               <div>
+
                 <p className="text-sm text-slate-500">
                   Female Patients
                 </p>
 
                 <h2 className="text-3xl font-bold text-slate-900 mt-2">
-                  {
-                    patients.filter(
-                      (p) =>
-                        p.GENDER?.toLowerCase() ===
-                        'female'
-                    ).length
-                  }
+                  {getGenderTotal('female')}
                 </h2>
+
               </div>
 
               <div
@@ -230,15 +314,56 @@ export default function PatientsPage() {
                   flex items-center justify-center
                 "
               >
+
                 <UserRound
                   className="text-pink-600"
                   size={24}
                 />
+
               </div>
+
             </div>
+
           </div>
+
         </div>
+
+
+
+        {/* SUBQUERY RESULTS */}
+        <div className="mt-8">
+
+          <h2 className="text-lg font-bold text-slate-900 mb-4">
+            Patients With Appointments
+          </h2>
+
+          <div className="flex flex-wrap gap-3">
+
+            {activePatients.map((patient, index) => (
+
+              <div
+                key={index}
+                className="
+                  px-4 py-2
+                  rounded-2xl
+                  bg-emerald-100
+                  text-emerald-700
+                  text-sm
+                  font-semibold
+                "
+              >
+                {patient.NAME}
+              </div>
+
+            ))}
+
+          </div>
+
+        </div>
+
       </div>
+
+
 
       {/* TABLE CARD */}
       <div
@@ -250,6 +375,7 @@ export default function PatientsPage() {
           overflow-hidden
         "
       >
+
         {/* TABLE HEADER */}
         <div
           className="
@@ -258,7 +384,9 @@ export default function PatientsPage() {
             border-b border-slate-200
           "
         >
+
           <div>
+
             <h2 className="text-2xl font-bold text-slate-900">
               Patient Records
             </h2>
@@ -266,6 +394,7 @@ export default function PatientsPage() {
             <p className="text-slate-500 mt-1">
               Complete healthcare patient list
             </p>
+
           </div>
 
           <div
@@ -280,14 +409,21 @@ export default function PatientsPage() {
           >
             {filteredPatients.length} Records
           </div>
+
         </div>
+
+
 
         {/* TABLE */}
         <div className="overflow-x-auto">
+
           <table className="w-full min-w-[1100px]">
+
             {/* HEAD */}
             <thead className="bg-slate-50">
+
               <tr>
+
                 <th className="text-left p-5 text-sm font-semibold text-slate-600">
                   Patient
                 </th>
@@ -311,13 +447,20 @@ export default function PatientsPage() {
                 <th className="text-left p-5 text-sm font-semibold text-slate-600">
                   Action
                 </th>
+
               </tr>
+
             </thead>
+
+
 
             {/* BODY */}
             <tbody>
+
               {filteredPatients.length > 0 ? (
+
                 filteredPatients.map((patient) => (
+
                   <tr
                     key={patient.PATIENT_ID}
                     className="
@@ -326,9 +469,12 @@ export default function PatientsPage() {
                       transition-all
                     "
                   >
+
                     {/* PATIENT */}
                     <td className="p-5">
+
                       <div className="flex items-center gap-4">
+
                         {/* AVATAR */}
                         <div
                           className="
@@ -345,34 +491,48 @@ export default function PatientsPage() {
                           {patient.NAME?.charAt(0)}
                         </div>
 
+
+
                         {/* INFO */}
                         <div>
+
                           <h3 className="font-semibold text-slate-900">
                             {patient.NAME}
                           </h3>
 
                           <p className="text-sm text-slate-500">
-                            ID #
-                            {patient.PATIENT_ID}
+                            ID #{patient.PATIENT_ID}
                           </p>
+
                         </div>
+
                       </div>
+
                     </td>
+
+
 
                     {/* DOB */}
                     <td className="p-5">
+
                       <div className="flex items-center gap-2 text-slate-700">
+
                         <CalendarDays
                           size={16}
                           className="text-slate-400"
                         />
 
                         {patient.DOB?.split('T')[0]}
+
                       </div>
+
                     </td>
+
+
 
                     {/* GENDER */}
                     <td className="p-5">
+
                       <span
                         className={`
                           px-3 py-1
@@ -389,23 +549,34 @@ export default function PatientsPage() {
                       >
                         {patient.GENDER}
                       </span>
+
                     </td>
+
+
 
                     {/* PHONE */}
                     <td className="p-5">
+
                       <div className="flex items-center gap-2 text-slate-700">
+
                         <Phone
                           size={16}
                           className="text-slate-400"
                         />
 
                         {patient.PHONE}
+
                       </div>
+
                     </td>
+
+
 
                     {/* ADDRESS */}
                     <td className="p-5">
+
                       <div className="flex items-center gap-2 text-slate-700 max-w-[250px]">
+
                         <MapPin
                           size={16}
                           className="text-slate-400 min-w-[16px]"
@@ -414,11 +585,16 @@ export default function PatientsPage() {
                         <span className="truncate">
                           {patient.ADDRESS}
                         </span>
+
                       </div>
+
                     </td>
+
+
 
                     {/* ACTION */}
                     <td className="p-5">
+
                       <Link
                         href={`/patients/${patient.PATIENT_ID}`}
                         className="
@@ -433,19 +609,28 @@ export default function PatientsPage() {
                           transition
                         "
                       >
+
                         <Eye size={16} />
 
                         View
+
                       </Link>
+
                     </td>
+
                   </tr>
+
                 ))
+
               ) : (
+
                 <tr>
+
                   <td
                     colSpan={6}
                     className="text-center p-16"
                   >
+
                     <div
                       className="
                         h-20 w-20
@@ -455,10 +640,12 @@ export default function PatientsPage() {
                         mx-auto mb-5
                       "
                     >
+
                       <Users
                         className="text-slate-400"
                         size={36}
                       />
+
                     </div>
 
                     <h3 className="text-xl font-bold text-slate-900">
@@ -468,13 +655,21 @@ export default function PatientsPage() {
                     <p className="text-slate-500 mt-2">
                       No patient records available.
                     </p>
+
                   </td>
+
                 </tr>
+
               )}
+
             </tbody>
+
           </table>
+
         </div>
+
       </div>
+
     </div>
   );
 }

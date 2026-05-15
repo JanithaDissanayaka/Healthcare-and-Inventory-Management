@@ -6,8 +6,6 @@ import {
   CalendarDays,
   User,
   Stethoscope,
-  Building2,
-  Clock3,
   ClipboardCheck,
   Save,
 } from 'lucide-react';
@@ -23,7 +21,9 @@ type Doctor = {
 };
 
 export default function NewAppointmentForm() {
-  const [loading, setLoading] = useState(false);
+
+  const [loading, setLoading] =
+    useState(false);
 
   const [patients, setPatients] =
     useState<Patient[]>([]);
@@ -31,107 +31,172 @@ export default function NewAppointmentForm() {
   const [doctors, setDoctors] =
     useState<Doctor[]>([]);
 
-  const [formData, setFormData] = useState({
-    patientId: '',
-    doctorId: '',
-    clinicId: '',
-    date: '',
-    time: '',
-    status: '',
-  });
+  const [formData, setFormData] =
+    useState({
+      patientId: '',
+      doctorId: '',
+      date: '',
+      status: '',
+    });
+
+
 
   useEffect(() => {
     fetchPatients();
     fetchDoctors();
   }, []);
 
+
+
+
   // FETCH PATIENTS
-  const fetchPatients = async () => {
+  const fetchPatients =
+    async () => {
+
     try {
-      const res = await fetch('/api/patients');
 
-      const data = await res.json();
+      const res =
+        await fetch(
+          '/api/patients'
+        );
 
-      setPatients(data);
+      const data =
+        await res.json();
+
+      setPatients(
+        data.patients || []
+      );
+
     } catch (error) {
+
       console.error(error);
+
+      setPatients([]);
+
     }
   };
+
+
 
   // FETCH DOCTORS
-  const fetchDoctors = async () => {
+  const fetchDoctors =
+    async () => {
+
     try {
-      const res = await fetch('/api/doctors');
 
-      const data = await res.json();
+      const res =
+        await fetch(
+          '/api/doctors'
+        );
 
-      setDoctors(data);
+      const data =
+        await res.json();
+
+      setDoctors(
+        data || []
+      );
+
     } catch (error) {
+
       console.error(error);
+
+      setDoctors([]);
+
     }
   };
+
+
 
   // HANDLE INPUT
   const handleChange = (
     e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement
+      HTMLInputElement |
+      HTMLSelectElement
     >
   ) => {
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]:
+        e.target.value,
     });
+
   };
 
+
+
   // SUBMIT
-  const handleSubmit = async (
-    e: React.FormEvent
-  ) => {
+  const handleSubmit =
+    async (
+      e: React.FormEvent
+    ) => {
+
     e.preventDefault();
 
     setLoading(true);
 
     try {
-      const res = await fetch(
-        '/api/appointments',
-        {
-          method: 'POST',
 
-          headers: {
-            'Content-Type': 'application/json',
-          },
+      const res =
+        await fetch(
+          '/api/appointments',
+          {
+            method: 'POST',
 
-          body: JSON.stringify(formData),
-        }
-      );
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
 
-      const data = await res.json();
+            body: JSON.stringify(
+              formData
+            ),
+          }
+        );
+
+      const data =
+        await res.json();
+
+
 
       if (res.ok) {
+
         alert(data.message);
 
         setFormData({
           patientId: '',
           doctorId: '',
-          clinicId: '',
           date: '',
-          time: '',
           status: '',
         });
+
       } else {
+
         alert(data.error);
+
       }
+
     } catch (error) {
+
       console.error(error);
 
-      alert('Error creating appointment');
+      alert(
+        'Error creating appointment'
+      );
+
     } finally {
+
       setLoading(false);
+
     }
   };
 
+
+
   return (
+
     <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
+
       <div
         className="
           bg-white
@@ -143,6 +208,7 @@ export default function NewAppointmentForm() {
           overflow-hidden
         "
       >
+
         {/* TOP SECTION */}
         <div
           className="
@@ -152,6 +218,7 @@ export default function NewAppointmentForm() {
             relative
           "
         >
+
           {/* LIGHT DECORATION */}
           <div
             className="
@@ -174,6 +241,7 @@ export default function NewAppointmentForm() {
           ></div>
 
           <div className="relative flex items-center gap-5">
+
             {/* ICON */}
             <div
               className="
@@ -184,14 +252,17 @@ export default function NewAppointmentForm() {
                 flex items-center justify-center
               "
             >
+
               <CalendarDays
                 className="text-emerald-600"
                 size={28}
               />
+
             </div>
 
             {/* TEXT */}
             <div>
+
               <h2 className="text-3xl font-bold text-slate-900">
                 Appointment Scheduling
               </h2>
@@ -199,18 +270,26 @@ export default function NewAppointmentForm() {
               <p className="text-slate-500 mt-2 text-base">
                 Create and manage patient appointments.
               </p>
+
             </div>
+
           </div>
+
         </div>
+
+
 
         {/* FORM */}
         <div className="p-6 lg:p-10">
+
           <form
             onSubmit={handleSubmit}
             className="space-y-8"
           >
+
             {/* GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
               {/* PATIENT */}
               <SelectField
                 label="Patient"
@@ -219,19 +298,30 @@ export default function NewAppointmentForm() {
                 onChange={handleChange}
                 icon={<User size={18} />}
               >
+
                 <option value="">
                   Select Patient
                 </option>
 
-                {patients.map((patient) => (
+                {patients.map(
+                  (patient) => (
+
                   <option
-                    key={patient.PATIENT_ID}
-                    value={patient.PATIENT_ID}
+                    key={
+                      patient.PATIENT_ID
+                    }
+                    value={
+                      patient.PATIENT_ID
+                    }
                   >
                     {patient.NAME}
                   </option>
+
                 ))}
+
               </SelectField>
+
+
 
               {/* DOCTOR */}
               <SelectField
@@ -239,32 +329,36 @@ export default function NewAppointmentForm() {
                 name="doctorId"
                 value={formData.doctorId}
                 onChange={handleChange}
-                icon={<Stethoscope size={18} />}
+                icon={
+                  <Stethoscope
+                    size={18}
+                  />
+                }
               >
+
                 <option value="">
                   Select Doctor
                 </option>
 
-                {doctors.map((doctor) => (
+                {doctors.map(
+                  (doctor) => (
+
                   <option
-                    key={doctor.DOCTOR_ID}
-                    value={doctor.DOCTOR_ID}
+                    key={
+                      doctor.DOCTOR_ID
+                    }
+                    value={
+                      doctor.DOCTOR_ID
+                    }
                   >
                     {doctor.NAME}
                   </option>
+
                 ))}
+
               </SelectField>
 
-              {/* CLINIC */}
-              <InputField
-                label="Clinic ID"
-                type="number"
-                name="clinicId"
-                value={formData.clinicId}
-                onChange={handleChange}
-                placeholder="101"
-                icon={<Building2 size={18} />}
-              />
+
 
               {/* DATE */}
               <InputField
@@ -274,19 +368,14 @@ export default function NewAppointmentForm() {
                 value={formData.date}
                 onChange={handleChange}
                 placeholder=""
-                icon={<CalendarDays size={18} />}
+                icon={
+                  <CalendarDays
+                    size={18}
+                  />
+                }
               />
 
-              {/* TIME */}
-              <InputField
-                label="Appointment Time"
-                type="time"
-                name="time"
-                value={formData.time}
-                onChange={handleChange}
-                placeholder=""
-                icon={<Clock3 size={18} />}
-              />
+
 
               {/* STATUS */}
               <SelectField
@@ -294,28 +383,38 @@ export default function NewAppointmentForm() {
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                icon={<ClipboardCheck size={18} />}
+                icon={
+                  <ClipboardCheck
+                    size={18}
+                  />
+                }
               >
+
                 <option value="">
                   Select Status
                 </option>
 
-                <option value="Scheduled">
-                  Scheduled
+                <option value="PENDING">
+                  PENDING
                 </option>
 
-                <option value="Completed">
-                  Completed
+                <option value="COMPLETED">
+                  COMPLETED
                 </option>
 
-                <option value="Cancelled">
-                  Cancelled
+                <option value="CANCELLED">
+                  CANCELLED
                 </option>
+
               </SelectField>
+
             </div>
+
+
 
             {/* BUTTON */}
             <div className="pt-2">
+
               <button
                 type="submit"
                 disabled={loading}
@@ -332,19 +431,28 @@ export default function NewAppointmentForm() {
                   disabled:opacity-70
                 "
               >
+
                 <Save size={20} />
 
                 {loading
                   ? 'Creating Appointment...'
                   : 'Create Appointment'}
+
               </button>
+
             </div>
+
           </form>
+
         </div>
+
       </div>
+
     </div>
   );
 }
+
+
 
 /* INPUT FIELD */
 
@@ -367,12 +475,15 @@ const InputField = ({
   ) => void;
   icon: React.ReactNode;
 }) => (
+
   <div>
+
     <label className="block text-sm font-semibold text-slate-700 mb-3">
       {label}
     </label>
 
     <div className="relative">
+
       <div
         className="
           absolute
@@ -405,9 +516,13 @@ const InputField = ({
           focus:border-transparent
         "
       />
+
     </div>
+
   </div>
 );
+
+
 
 /* SELECT FIELD */
 
@@ -428,12 +543,15 @@ const SelectField = ({
   icon: React.ReactNode;
   children: React.ReactNode;
 }) => (
+
   <div>
+
     <label className="block text-sm font-semibold text-slate-700 mb-3">
       {label}
     </label>
 
     <div className="relative">
+
       <div
         className="
           absolute
@@ -468,6 +586,8 @@ const SelectField = ({
       >
         {children}
       </select>
+
     </div>
+
   </div>
 );

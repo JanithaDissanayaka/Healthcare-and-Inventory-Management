@@ -10,38 +10,50 @@ import {
   VenusAndMars,
   Save,
   Users,
+  Droplets,
 } from 'lucide-react';
 
 export default function NewPatientForm() {
+
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     dob: '',
     gender: '',
     phone: '',
     address: '',
+    bloodGroup: '',
   });
+
+
 
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement
     >
   ) => {
+
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+
   };
+
+
 
   const handleSubmit = async (
     e: React.FormEvent
   ) => {
+
     e.preventDefault();
 
     setLoading(true);
 
     try {
+
       const res = await fetch('/api/patients', {
         method: 'POST',
 
@@ -56,25 +68,35 @@ export default function NewPatientForm() {
 
       alert(data.message);
 
-      // RESET FORM
       setFormData({
-        name: '',
+        firstName: '',
+        lastName: '',
         dob: '',
         gender: '',
         phone: '',
         address: '',
+        bloodGroup: '',
       });
+
     } catch (error) {
+
       console.error(error);
 
       alert('Error adding patient');
+
     } finally {
+
       setLoading(false);
+
     }
   };
 
+
+
   return (
+
     <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
+
       <div
         className="
           bg-white
@@ -84,6 +106,7 @@ export default function NewPatientForm() {
           overflow-hidden
         "
       >
+
         {/* TOP BANNER */}
         <div
           className="
@@ -93,7 +116,7 @@ export default function NewPatientForm() {
             relative
           "
         >
-          {/* LIGHT DECORATION */}
+
           <div
             className="
               absolute
@@ -115,7 +138,7 @@ export default function NewPatientForm() {
           ></div>
 
           <div className="relative flex items-center gap-5">
-            {/* ICON */}
+
             <div
               className="
                 h-16 w-16
@@ -125,14 +148,16 @@ export default function NewPatientForm() {
                 flex items-center justify-center
               "
             >
+
               <Users
                 className="text-emerald-600"
                 size={28}
               />
+
             </div>
 
-            {/* TEXT */}
             <div>
+
               <h2 className="text-3xl font-bold text-slate-900">
                 Patient Registration
               </h2>
@@ -140,27 +165,48 @@ export default function NewPatientForm() {
               <p className="text-slate-500 mt-2 text-base">
                 Register new patients into the healthcare system.
               </p>
+
             </div>
+
           </div>
+
         </div>
+
+
 
         {/* FORM */}
         <div className="p-6 lg:p-10">
+
           <form
             onSubmit={handleSubmit}
             className="space-y-8"
           >
-            {/* GRID */}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* NAME */}
+
+              {/* FIRST NAME */}
               <InputField
-                label="Patient Name"
-                name="name"
-                value={formData.name}
+                label="First Name"
+                name="firstName"
+                value={formData.firstName}
                 onChange={handleChange}
-                placeholder="Sarah Mitchell"
+                placeholder="John"
                 icon={<User size={18} />}
               />
+
+
+
+              {/* LAST NAME */}
+              <InputField
+                label="Last Name"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Doe"
+                icon={<User size={18} />}
+              />
+
+
 
               {/* DOB */}
               <InputField
@@ -173,6 +219,8 @@ export default function NewPatientForm() {
                 icon={<CalendarDays size={18} />}
               />
 
+
+
               {/* GENDER */}
               <SelectField
                 label="Gender"
@@ -181,11 +229,12 @@ export default function NewPatientForm() {
                 onChange={handleChange}
                 icon={<VenusAndMars size={18} />}
                 options={[
-                  'Male',
-                  'Female',
-                  'Other',
+                  'MALE',
+                  'FEMALE',
                 ]}
               />
+
+
 
               {/* PHONE */}
               <InputField
@@ -197,8 +246,23 @@ export default function NewPatientForm() {
                 icon={<Phone size={18} />}
               />
 
+
+
+              {/* BLOOD GROUP */}
+              <InputField
+                label="Blood Group"
+                name="bloodGroup"
+                value={formData.bloodGroup}
+                onChange={handleChange}
+                placeholder="A+"
+                icon={<Droplets size={18} />}
+              />
+
+
+
               {/* ADDRESS */}
               <div className="md:col-span-2">
+
                 <InputField
                   label="Address"
                   name="address"
@@ -207,11 +271,16 @@ export default function NewPatientForm() {
                   placeholder="Colombo, Sri Lanka"
                   icon={<MapPin size={18} />}
                 />
+
               </div>
+
             </div>
+
+
 
             {/* BUTTON */}
             <div className="pt-2">
+
               <button
                 type="submit"
                 disabled={loading}
@@ -228,19 +297,28 @@ export default function NewPatientForm() {
                   disabled:opacity-70
                 "
               >
+
                 <Save size={20} />
 
                 {loading
                   ? 'Registering Patient...'
                   : 'Register Patient'}
+
               </button>
+
             </div>
+
           </form>
+
         </div>
+
       </div>
+
     </div>
   );
 }
+
+
 
 /* INPUT FIELD */
 
@@ -263,12 +341,15 @@ const InputField = ({
   ) => void;
   icon: React.ReactNode;
 }) => (
+
   <div>
+
     <label className="block text-sm font-semibold text-slate-700 mb-3">
       {label}
     </label>
 
     <div className="relative">
+
       <div
         className="
           absolute
@@ -301,9 +382,13 @@ const InputField = ({
           focus:border-transparent
         "
       />
+
     </div>
+
   </div>
 );
+
+
 
 /* SELECT FIELD */
 
@@ -324,12 +409,15 @@ const SelectField = ({
   ) => void;
   icon: React.ReactNode;
 }) => (
+
   <div>
+
     <label className="block text-sm font-semibold text-slate-700 mb-3">
       {label}
     </label>
 
     <div className="relative">
+
       <div
         className="
           absolute
@@ -362,16 +450,22 @@ const SelectField = ({
           focus:border-transparent
         "
       >
+
         <option value="">
           Select Gender
         </option>
 
         {options.map((opt) => (
+
           <option key={opt} value={opt}>
             {opt}
           </option>
+
         ))}
+
       </select>
+
     </div>
+
   </div>
 );

@@ -3,7 +3,10 @@ import oracledb from "oracledb";
 import { getConnection } from "@/lib/db";
 
 
+
+// ===============================
 // GET ALL DOCTORS
+// ===============================
 export async function GET() {
 
   let connection;
@@ -13,22 +16,38 @@ export async function GET() {
     connection = await getConnection();
 
     const result = await connection.execute(
-      `SELECT * FROM DOCTOR`,
+      `
+      SELECT
+        DOCTOR_ID,
+        DOCTOR_NAME AS NAME,
+        SPECIALIZATION,
+        PHONE,
+        EMAIL,
+        SALARY
+      FROM DOCTOR
+      ORDER BY DOCTOR_ID DESC
+      `,
       [],
       {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
       }
     );
 
-    return NextResponse.json(result.rows || []);
+    return NextResponse.json(
+      result.rows || []
+    );
 
   } catch (error) {
 
     console.error(error);
 
     return NextResponse.json(
-      { error: "Database error" },
-      { status: 500 }
+      {
+        error: "Database error",
+      },
+      {
+        status: 500,
+      }
     );
 
   } finally {
@@ -41,7 +60,9 @@ export async function GET() {
 
 
 
+// ===============================
 // ADD DOCTOR
+// ===============================
 export async function POST(req: Request) {
 
   let connection;
@@ -55,20 +76,30 @@ export async function POST(req: Request) {
     await connection.execute(
       `
       INSERT INTO DOCTOR
-      (Name, Specialization, Phone, Experience_Years)
+      (
+        DOCTOR_ID,
+        DOCTOR_NAME,
+        SPECIALIZATION,
+        PHONE,
+        EMAIL,
+        SALARY
+      )
       VALUES
       (
+        DOCTOR_SEQ.NEXTVAL,
         :name,
         :specialization,
         :phone,
-        :experience
+        :email,
+        :salary
       )
       `,
       {
         name: body.name,
         specialization: body.specialization,
         phone: body.phone,
-        experience: body.experience,
+        email: body.email,
+        salary: body.salary,
       },
       {
         autoCommit: true,
@@ -84,8 +115,12 @@ export async function POST(req: Request) {
     console.error(error);
 
     return NextResponse.json(
-      { error: "Insert failed" },
-      { status: 500 }
+      {
+        error: "Insert failed",
+      },
+      {
+        status: 500,
+      }
     );
 
   } finally {

@@ -5,7 +5,7 @@ import { getConnection } from "@/lib/db";
 
 
 // ===============================
-// GET SINGLE PATIENT
+// GET SINGLE DOCTOR
 // ===============================
 export async function GET(
   req: Request,
@@ -23,14 +23,14 @@ export async function GET(
     const result = await connection.execute(
       `
       SELECT
-        PATIENT_ID,
-        FIRST_NAME || ' ' || LAST_NAME AS NAME,
-        DOB,
-        GENDER,
+        DOCTOR_ID,
+        DOCTOR_NAME AS NAME,
+        SPECIALIZATION,
         PHONE,
-        ADDRESS
-      FROM PATIENT
-      WHERE PATIENT_ID = :id
+        EMAIL,
+        SALARY
+      FROM DOCTOR
+      WHERE DOCTOR_ID = :id
       `,
       {
         id,
@@ -68,7 +68,7 @@ export async function GET(
 
 
 // ===============================
-// UPDATE PATIENT
+// UPDATE DOCTOR
 // ===============================
 export async function PUT(
   req: Request,
@@ -87,15 +87,17 @@ export async function PUT(
 
     await connection.execute(
       `
-      UPDATE PATIENT
+      UPDATE DOCTOR
       SET
         PHONE = :phone,
-        ADDRESS = :address
-      WHERE PATIENT_ID = :id
+        EMAIL = :email,
+        SALARY = :salary
+      WHERE DOCTOR_ID = :id
       `,
       {
         phone: body.phone,
-        address: body.address,
+        email: body.email,
+        salary: body.salary,
         id,
       },
       {
@@ -104,7 +106,7 @@ export async function PUT(
     );
 
     return NextResponse.json({
-      message: "Patient updated successfully",
+      message: "Doctor updated successfully",
     });
 
   } catch (error) {
@@ -131,7 +133,7 @@ export async function PUT(
 
 
 // ===============================
-// DELETE PATIENT
+// DELETE DOCTOR
 // ===============================
 export async function DELETE(
   req: Request,
@@ -148,8 +150,8 @@ export async function DELETE(
 
     await connection.execute(
       `
-      DELETE FROM PATIENT
-      WHERE PATIENT_ID = :id
+      DELETE FROM DOCTOR
+      WHERE DOCTOR_ID = :id
       `,
       {
         id,
@@ -160,7 +162,7 @@ export async function DELETE(
     );
 
     return NextResponse.json({
-      message: "Patient deleted successfully",
+      message: "Doctor deleted successfully",
     });
 
   } catch (error) {

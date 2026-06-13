@@ -2,30 +2,24 @@ import { NextResponse } from "next/server";
 import oracledb from "oracledb";
 import { getConnection } from "@/lib/db";
 
-
-
-// ===============================
-// GET ALL PATIENTS
-// ===============================
+/* GET ALL PATIENTS */
 export async function GET() {
-
   let connection;
 
   try {
-
     connection = await getConnection();
 
-    const patients = await connection.execute(
+    const patientResult = await connection.execute(
       `
       SELECT
-        PATIENT_ID,
-        FIRST_NAME || ' ' || LAST_NAME AS NAME,
+        PATIENTID AS PATIENT_ID,
+        FIRSTNAME || ' ' || LASTNAME AS NAME,
         DOB,
         GENDER,
-        PHONE,
-        ADDRESS
+        '' AS PHONE,
+        '' AS ADDRESS
       FROM PATIENT
-      ORDER BY PATIENT_ID DESC
+      ORDER BY PATIENTID DESC
       `,
       [],
       {
@@ -33,9 +27,7 @@ export async function GET() {
       }
     );
 
-
-
-    const genderStats = await connection.execute(
+    const genderResult = await connection.execute(
       `
       SELECT
         GENDER,
@@ -49,18 +41,43 @@ export async function GET() {
       }
     );
 
+    return NextResponse.json({
+      patients: patientResult.rows || [],
+      genderStats: genderResult.rows || [],
+      activePatients: [],
+    });
 
+  } catch (error) {
+    console.error(error);
 
-    const activePatients = await connection.execute(
+    return NextResponse.json(
+      {
+        error: "Failed to fetch patients",
+      },
+      {
+        status: 500,
+      }
+    );
+  } finally {
+    if (connection) {
+      await connection.close();
+    }
+  }
+}
+
+/* INSERT PATIENT */
+export async function POST(req: Request) {
+  let connection;
+
+  try {
+    const body = await req.json();
+
+    connection = await getConnection();
+
+    const result = await connection.execute(
       `
-      SELECT
-        FIRST_NAME || ' ' || LAST_NAME AS NAME
+      SELECT NVL(MAX(PATIENTID),0)+1 AS NEW_ID
       FROM PATIENT
-      WHERE PATIENT_ID IN
-      (
-        SELECT PATIENT_ID
-        FROM APPOINTMENT
-      )
       `,
       [],
       {
@@ -68,99 +85,52 @@ export async function GET() {
       }
     );
 
-
-
-    return NextResponse.json({
-      patients: patients.rows || [],
-      genderStats: genderStats.rows || [],
-      activePatients: activePatients.rows || [],
-    });
-
-  } catch (error) {
-
-    console.error(error);
-
-    return NextResponse.json(
-      {
-        error: "Database error",
-      },
-      {
-        status: 500,
-      }
-    );
-
-  } finally {
-
-    if (connection) {
-      await connection.close();
-    }
-  }
-}
-
-
-
-// ===============================
-// ADD PATIENT
-// ===============================
-export async function POST(req: Request) {
-
-  let connection;
-
-  try {
-
-    const body = await req.json();
-
-    connection = await getConnection();
-
-
+    const patientId = (result.rows?.[0] as any).NEW_ID;
 
     await connection.execute(
       `
       INSERT INTO PATIENT
       (
-        PATIENT_ID,
-        FIRST_NAME,
-        LAST_NAME,
-        DOB,
+        PATIENTID,
+        FIRSTNAME,
+        LASTNAME,
         GENDER,
-        PHONE,
-        ADDRESS,
-        BLOOD_GROUP
+        DOB,
+        DISEASE,
+        ADMITDATE,
+        HOSPITALID
       )
       VALUES
       (
-        PATIENT_SEQ.NEXTVAL,
+        :patientId,
         :firstName,
         :lastName,
-        TO_DATE(:dob, 'YYYY-MM-DD'),
         :gender,
-        :phone,
-        :address,
-        :bloodGroup
+        TO_DATE(:dob,'YYYY-MM-DD'),
+        :disease,
+        SYSDATE,
+        :hospitalId
       )
       `,
       {
+        patientId,
         firstName: body.firstName,
         lastName: body.lastName,
+        gender: body.gender,
         dob: body.dob,
-        gender: body.gender.toUpperCase(),
-        phone: body.phone,
-        address: body.address,
-        bloodGroup: body.bloodGroup,
+        disease: "General",
+        hospitalId: 1,
       },
       {
         autoCommit: true,
       }
     );
 
-
-
     return NextResponse.json({
       message: "Patient added successfully",
     });
 
   } catch (error) {
-
     console.error(error);
 
     return NextResponse.json(
@@ -171,9 +141,7 @@ export async function POST(req: Request) {
         status: 500,
       }
     );
-
   } finally {
-
     if (connection) {
       await connection.close();
     }

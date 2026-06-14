@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -9,8 +9,6 @@ import {
   Users,
   Stethoscope,
   CalendarDays,
-  ClipboardPlus,
-  Pill,
   Boxes,
   Truck,
   CreditCard,
@@ -19,6 +17,8 @@ import {
   HeartPulse,
   Settings,
   LogOut,
+  Menu,
+  X,
 } from 'lucide-react';
 
 const navSections = [
@@ -54,8 +54,6 @@ const navSections = [
         icon: CalendarDays,
         badge: '',
       },
-
-      
     ],
   },
 
@@ -93,25 +91,67 @@ const navSections = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
 
   return (
     <>
+      {/* MOBILE TOP BAR */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#020817] border-b border-slate-800 px-4 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <HeartPulse className="text-emerald-400" size={24} />
+          <h1 className="text-white font-bold text-lg">CarePulse</h1>
+        </div>
+
+        <button
+          onClick={() => setOpen(true)}
+          className="text-white"
+        >
+          <Menu size={28} />
+        </button>
+      </div>
+
+      {/* MOBILE OVERLAY */}
+      {open && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/60 z-50"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
       {/* SIDEBAR */}
       <aside
-        className="
-          hidden lg:flex
+        className={`
+          fixed top-0 left-0 z-[60]
           w-[290px]
-          min-h-screen
+          h-screen
           bg-[#020817]
           border-r border-slate-800
-          flex-col
-          justify-between
-          fixed left-0 top-0
-          z-50
-        "
+          flex flex-col
+          transition-transform duration-300
+
+          ${
+            open
+              ? 'translate-x-0'
+              : '-translate-x-full lg:translate-x-0'
+          }
+        `}
       >
-        {/* TOP */}
-        <div>
+        {/* HEADER */}
+        <div className="flex items-center justify-between p-6 lg:hidden border-b border-slate-800">
+          <h2 className="text-white text-xl font-bold">
+            CarePulse
+          </h2>
+
+          <button
+            onClick={() => setOpen(false)}
+            className="text-white"
+          >
+            <X size={26} />
+          </button>
+        </div>
+
+        {/* SCROLLABLE CONTENT */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
           {/* LOGO */}
           <div className="p-6">
             <div
@@ -196,7 +236,7 @@ export default function Sidebar() {
           </div>
 
           {/* NAVIGATION */}
-          <nav className="px-4 space-y-8 overflow-y-auto">
+          <nav className="px-4 space-y-8">
             {navSections.map((section) => (
               <div key={section.category}>
                 <div
@@ -221,6 +261,7 @@ export default function Sidebar() {
                       <li key={item.name}>
                         <Link
                           href={item.href}
+                          onClick={() => setOpen(false)}
                           className={`
                             group
                             flex items-center
@@ -256,7 +297,6 @@ export default function Sidebar() {
                               h-11 w-11
                               rounded-xl
                               flex items-center justify-center
-                              transition-all
 
                               ${
                                 isActive
@@ -274,7 +314,6 @@ export default function Sidebar() {
                             </div>
                           </div>
 
-                          {/* BADGE */}
                           {item.badge && (
                             <div
                               className={`
@@ -301,7 +340,6 @@ export default function Sidebar() {
                             <ChevronRight
                               size={18}
                               className={`
-                                transition-transform
                                 ${
                                   isActive
                                     ? 'text-white'
@@ -318,126 +356,123 @@ export default function Sidebar() {
               </div>
             ))}
           </nav>
-        </div>
 
-        {/* BOTTOM */}
-        <div className="p-6">
-          {/* SYSTEM STATUS */}
-          <div
-            className="
-              mb-6
-              rounded-3xl
-              bg-gradient-to-r
-              from-slate-900
-              to-slate-800
-              border border-slate-800
-              p-5
-            "
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-white font-semibold">
-                  System Health
-                </h3>
+          {/* BOTTOM */}
+          <div className="p-6">
+            {/* SYSTEM STATUS */}
+            <div
+              className="
+                mb-6
+                rounded-3xl
+                bg-gradient-to-r
+                from-slate-900
+                to-slate-800
+                border border-slate-800
+                p-5
+              "
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-white font-semibold">
+                    System Health
+                  </h3>
 
-                <p className="text-slate-400 text-sm mt-1">
-                  All services operational
-                </p>
+                  <p className="text-slate-400 text-sm mt-1">
+                    All services operational
+                  </p>
+                </div>
+
+                <div className="h-3 w-3 rounded-full bg-green-400 animate-pulse"></div>
               </div>
 
-              <div className="h-3 w-3 rounded-full bg-green-400 animate-pulse"></div>
-            </div>
-
-            <div className="w-full h-2 rounded-full bg-slate-700 overflow-hidden">
-              <div className="w-[92%] h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full"></div>
-            </div>
-
-            <div className="text-xs text-slate-400 mt-2">
-              92% server performance
-            </div>
-          </div>
-
-          {/* PROFILE */}
-          <div
-            className="
-              bg-slate-900
-              border border-slate-800
-              rounded-3xl
-              p-4
-            "
-          >
-            <div className="flex items-center gap-4">
-              <div
-                className="
-                  h-14 w-14
-                  rounded-2xl
-                  bg-gradient-to-br
-                  from-emerald-500
-                  to-cyan-500
-                  flex items-center justify-center
-                  text-white
-                  font-bold
-                  text-lg
-                "
-              >
-                DR
+              <div className="w-full h-2 rounded-full bg-slate-700 overflow-hidden">
+                <div className="w-[92%] h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full"></div>
               </div>
 
-              <div className="flex-1">
-                <h3 className="font-semibold text-white">
-                  Dr. Admin
-                </h3>
-
-                <p className="text-sm text-slate-400 mt-1">
-                  System Administrator
-                </p>
+              <div className="text-xs text-slate-400 mt-2">
+                92% server performance
               </div>
             </div>
 
-            {/* ACTIONS */}
-            <div className="grid grid-cols-2 gap-3 mt-5">
-              <button
-                className="
-                  flex items-center justify-center gap-2
-                  py-3
-                  rounded-2xl
-                  bg-slate-800
-                  hover:bg-slate-700
-                  transition
-                  text-slate-300
-                  text-sm
-                  font-medium
-                "
-              >
-                <Settings size={16} />
-                Settings
-              </button>
+            {/* PROFILE */}
+            <div
+              className="
+                bg-slate-900
+                border border-slate-800
+                rounded-3xl
+                p-4
+              "
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="
+                    h-14 w-14
+                    rounded-2xl
+                    bg-gradient-to-br
+                    from-emerald-500
+                    to-cyan-500
+                    flex items-center justify-center
+                    text-white
+                    font-bold
+                    text-lg
+                  "
+                >
+                  DR
+                </div>
 
-              <button
-                className="
-                  flex items-center justify-center gap-2
-                  py-3
-                  rounded-2xl
-                  bg-red-500/10
-                  hover:bg-red-500/20
-                  transition
-                  text-red-400
-                  text-sm
-                  font-medium
-                "
-              >
-                <LogOut size={16} />
-                Logout
-              </button>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-white">
+                    Dr. Admin
+                  </h3>
+
+                  <p className="text-sm text-slate-400 mt-1">
+                    System Administrator
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mt-5">
+                <button
+                  className="
+                    flex items-center justify-center gap-2
+                    py-3
+                    rounded-2xl
+                    bg-slate-800
+                    hover:bg-slate-700
+                    transition
+                    text-slate-300
+                    text-sm
+                    font-medium
+                  "
+                >
+                  <Settings size={16} />
+                  Settings
+                </button>
+
+                <button
+                  className="
+                    flex items-center justify-center gap-2
+                    py-3
+                    rounded-2xl
+                    bg-red-500/10
+                    hover:bg-red-500/20
+                    transition
+                    text-red-400
+                    text-sm
+                    font-medium
+                  "
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* MAIN CONTENT FIX */}
-      <main className="lg:ml-[290px] min-h-screen bg-slate-50">
-        {/* Your dashboard/pages render here */}
-      </main>
+      {/* MAIN CONTENT OFFSET */}
+      <div className="lg:ml-[290px] pt-[72px] lg:pt-0 min-h-screen" />
     </>
   );
 }

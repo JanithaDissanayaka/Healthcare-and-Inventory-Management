@@ -6,8 +6,9 @@ import { executeQuery } from "@/lib/db";
 // ======================================
 export async function GET() {
   try {
+    // Removed 'email' to match your actual database schema
     const patients = await executeQuery(`
-      SELECT patient_id AS PATIENT_ID, name, phone, email, blood_group
+      SELECT patient_id AS PATIENT_ID, name, phone, blood_group
       FROM patients
       ORDER BY name ASC
     `);

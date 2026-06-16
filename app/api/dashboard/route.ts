@@ -1,234 +1,56 @@
 import { NextResponse } from "next/server";
-import oracledb from "oracledb";
-
-import { getConnection } from "@/lib/db";
-
-
+import { executeQuery } from "@/lib/db";
 
 export async function GET() {
-
-  let connection;
-
   try {
+    // Collect primary summary counters
+    const pCount = await executeQuery("SELECT COUNT(*) AS TOTAL FROM patients");
+    const dCount = await executeQuery("SELECT COUNT(*) AS TOTAL FROM doctors");
+    const aCount = await executeQuery("SELECT COUNT(*) AS TOTAL FROM appointments");
+    
+    // Revenue is calculated from your valid billing table schema
+    const rCount = await executeQuery("SELECT NVL(SUM(total_amount), 0) AS TOTAL FROM billing");
 
-    connection =
-      await getConnection();
+    // Fetch up to 5 latest patient admissions
+    const latestPatients = await executeQuery(`
+      SELECT patient_id, name, phone FROM patients
+      ORDER BY patient_id DESC
+      FETCH FIRST 5 ROWS ONLY
+    `);
 
+    // Fetch up to 5 latest doctor recruits
+    const latestDoctors = await executeQuery(`
+      SELECT doctor_id, name, specialization, phone, email, salary FROM doctors
+      ORDER BY doctor_id DESC
+      FETCH FIRST 5 ROWS ONLY
+    `);
 
-
-    // TOTAL PATIENTS
-    const patientResult =
-      await connection.execute(
-        `
-        SELECT COUNT(*) AS TOTAL
-        FROM PATIENT
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // TOTAL DOCTORS
-    const doctorResult =
-      await connection.execute(
-        `
-        SELECT COUNT(*) AS TOTAL
-        FROM DOCTOR
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // TOTAL APPOINTMENTS
-    const appointmentResult =
-      await connection.execute(
-        `
-        SELECT COUNT(*) AS TOTAL
-        FROM APPOINTMENT
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // TOTAL REVENUE
-    const revenueResult =
-      await connection.execute(
-        `
-        SELECT
-          NVL(SUM(COST),0)
-          AS TOTAL
-        FROM TREATMENT
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // LATEST PATIENTS
-    const latestPatients =
-      await connection.execute(
-        `
-        SELECT
-          PATIENT_ID,
-
-          FIRST_NAME || ' ' ||
-          LAST_NAME
-          AS NAME,
-
-          PHONE
-
-        FROM PATIENT
-
-        ORDER BY PATIENT_ID DESC
-
-        FETCH FIRST 5 ROWS ONLY
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // LATEST DOCTORS
-    const latestDoctors =
-      await connection.execute(
-        `
-        SELECT
-          DOCTOR_ID,
-
-          DOCTOR_NAME
-          AS NAME,
-
-          SPECIALIZATION
-
-        FROM DOCTOR
-
-        ORDER BY DOCTOR_ID DESC
-
-        FETCH FIRST 5 ROWS ONLY
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // MONTHLY PATIENT ANALYTICS
-    const monthlyPatients =
-      await connection.execute(
-        `
-        SELECT
-          TO_CHAR(
-            REGISTER_DATE,
-            'MON'
-          ) AS MONTH,
-
-          COUNT(*) AS PATIENTS
-
-        FROM PATIENT
-
-        GROUP BY
-          TO_CHAR(
-            REGISTER_DATE,
-            'MON'
-          )
-
-        ORDER BY
-          MIN(REGISTER_DATE)
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
+    // Track monthly data points using the patient creation column
+    const monthlyPatientsData = await executeQuery(`
+      SELECT
+        TO_CHAR(created_at, 'MON') AS MONTH,
+        COUNT(*) AS PATIENTS,
+        MIN(created_at) AS sort_key
+      FROM patients
+      GROUP BY TO_CHAR(created_at, 'MON')
+      ORDER BY sort_key ASC
+    `);
 
     return NextResponse.json({
-
-      totalPatients:
-        (patientResult
-          .rows?.[0] as any)
-          ?.TOTAL || 0,
-
-      totalDoctors:
-        (doctorResult
-          .rows?.[0] as any)
-          ?.TOTAL || 0,
-
-      totalAppointments:
-        (appointmentResult
-          .rows?.[0] as any)
-          ?.TOTAL || 0,
-
-      totalRevenue:
-        (revenueResult
-          .rows?.[0] as any)
-          ?.TOTAL || 0,
-
-
-
-      latestPatients:
-        latestPatients.rows || [],
-
-      latestDoctors:
-        latestDoctors.rows || [],
-
-
-
-      monthlyPatients:
-        monthlyPatients.rows
-          ?.map((item: any) => ({
-            month: item.MONTH,
-            patients:
-              item.PATIENTS,
-          })) || [],
-
+      totalPatients: pCount[0]?.TOTAL || 0,
+      totalDoctors: dCount[0]?.TOTAL || 0,
+      totalAppointments: aCount[0]?.TOTAL || 0,
+      totalRevenue: Number(rCount[0]?.TOTAL || 0),
+      latestPatients,
+      latestDoctors,
+      monthlyPatients: monthlyPatientsData.map((item: any) => ({
+        month: item.MONTH,
+        patients: Number(item.PATIENTS),
+      })),
     });
 
-  } catch (error) {
-
-    console.error(error);
-
-    return NextResponse.json(
-      {
-        error:
-          "Dashboard error",
-      },
-      {
-        status: 500,
-      }
-    );
-
-  } finally {
-
-    if (connection) {
-      await connection.close();
-    }
+  } catch (error: any) {
+    console.error("Dashboard Endpoint Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

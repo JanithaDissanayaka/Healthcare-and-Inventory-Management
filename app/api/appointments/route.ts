@@ -1,220 +1,80 @@
 import { NextResponse } from "next/server";
-import oracledb from "oracledb";
-import { getConnection } from "@/lib/db";
-
-
+import { executeQuery } from "@/lib/db";
 
 // ======================================
-// GET ALL APPOINTMENTS
+// GET ALL APPOINTMENTS & ANALYTICS
 // ======================================
 export async function GET() {
-
-  let connection;
-
   try {
-
-    connection = await getConnection();
-
-    const result = await connection.execute(
-      `
+    // 1. Fetch appointments with joined virtual name fields
+    const appointments = await executeQuery(`
       SELECT
         a.APPOINTMENT_ID,
-
-        p.FIRST_NAME || ' ' || p.LAST_NAME
-        AS PATIENT_NAME,
-
-        d.DOCTOR_NAME
-        AS DOCTOR_NAME,
-
-        a.APPOINTMENT_DATE,
-
+        p.NAME AS PATIENT_NAME,
+        d.NAME AS DOCTOR_NAME,
+        TO_CHAR(a.APPOINTMENT_DATE, 'YYYY-MM-DD') AS APPOINTMENT_DATE,
         a.STATUS
+      FROM appointments a
+      INNER JOIN patients p ON a.patient_id = p.patient_id
+      INNER JOIN doctors d ON a.doctor_id = d.doctor_id
+      ORDER BY a.appointment_id DESC
+    `);
 
-      FROM APPOINTMENT a
+    // 2. Fetch total appointments count grouped by doctor name
+    const analytics = await executeQuery(`
+      SELECT
+        d.NAME AS DOCTOR_NAME,
+        COUNT(a.appointment_id) AS TOTAL_APPOINTMENTS
+      FROM doctors d
+      LEFT JOIN appointments a ON d.doctor_id = a.doctor_id
+      GROUP BY d.NAME
+      ORDER BY TOTAL_APPOINTMENTS DESC
+    `);
 
-      INNER JOIN PATIENT p
-        ON a.PATIENT_ID = p.PATIENT_ID
-
-      INNER JOIN DOCTOR d
-        ON a.DOCTOR_ID = d.DOCTOR_ID
-
-      ORDER BY a.APPOINTMENT_ID DESC
-      `,
-      [],
-      {
-        outFormat:
-          oracledb.OUT_FORMAT_OBJECT,
-      }
-    );
-
-
-
-    // ANALYTICS
-    const analyticsResult =
-      await connection.execute(
-        `
-        SELECT
-          d.DOCTOR_NAME,
-          COUNT(a.APPOINTMENT_ID)
-          AS TOTAL_APPOINTMENTS
-
-        FROM DOCTOR d
-
-        LEFT JOIN APPOINTMENT a
-          ON d.DOCTOR_ID =
-             a.DOCTOR_ID
-
-        GROUP BY d.DOCTOR_NAME
-
-        ORDER BY
-          TOTAL_APPOINTMENTS DESC
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
-
-    // BUSY DOCTORS
-    const busyDoctors =
-      await connection.execute(
-        `
-        SELECT DOCTOR_NAME
-        FROM DOCTOR
-        WHERE DOCTOR_ID IN
-        (
-          SELECT DOCTOR_ID
-          FROM APPOINTMENT
-          GROUP BY DOCTOR_ID
-          HAVING COUNT(*) > 5
-        )
-        `,
-        [],
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT,
-        }
-      );
-
-
+    // 3. Busy Doctors query (Doctors with more than 5 appointments)
+    const busyDoctors = await executeQuery(`
+      SELECT NAME FROM doctors
+      WHERE doctor_id IN (
+        SELECT doctor_id
+        FROM appointments
+        GROUP BY doctor_id
+        HAVING COUNT(*) > 5
+      )
+    `);
 
     return NextResponse.json({
-      appointments:
-        result.rows || [],
-
-      analytics:
-        analyticsResult.rows || [],
-
-      busyDoctors:
-        busyDoctors.rows || [],
+      appointments,
+      analytics,
+      busyDoctors,
     });
 
-  } catch (error) {
-
-    console.error(error);
-
-    return NextResponse.json(
-      {
-        error: "Database error",
-      },
-      {
-        status: 500,
-      }
-    );
-
-  } finally {
-
-    if (connection) {
-      await connection.close();
-    }
+  } catch (error: any) {
+    console.error("GET Appointments Error:", error);
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
 }
-
-
 
 // ======================================
 // ADD APPOINTMENT
 // ======================================
-export async function POST(
-  req: Request
-) {
-
-  let connection;
-
+export async function POST(req: Request) {
   try {
+    const body = await req.json();
 
-    const body =
-      await req.json();
+    // Use standard implicit identity column insertion without sequences
+    await executeQuery(`
+      INSERT INTO appointments (patient_id, doctor_id, appointment_date, status)
+      VALUES (:patientId, :doctorId, TO_DATE(:dateValue, 'YYYY-MM-DD'), :status)
+    `, [
+      Number(body.patientId),
+      Number(body.doctorId),
+      body.date,
+      body.status || 'PENDING'
+    ]);
 
-    connection =
-      await getConnection();
-
-
-
-    await connection.execute(
-      `
-      INSERT INTO APPOINTMENT
-      (
-        APPOINTMENT_ID,
-        PATIENT_ID,
-        DOCTOR_ID,
-        APPOINTMENT_DATE,
-        STATUS
-      )
-      VALUES
-      (
-        APPOINTMENT_SEQ.NEXTVAL,
-        :patientId,
-        :doctorId,
-        TO_DATE(:dateValue,'YYYY-MM-DD'),
-        :status
-      )
-      `,
-      {
-        patientId:
-          body.patientId,
-
-        doctorId:
-          body.doctorId,
-
-        dateValue:
-          body.date,
-
-        status:
-          body.status,
-      },
-      {
-        autoCommit: true,
-      }
-    );
-
-
-
-    return NextResponse.json({
-      message:
-        "Appointment added successfully",
-    });
-
-  } catch (error) {
-
-    console.error(error);
-
-    return NextResponse.json(
-      {
-        error: "Insert failed",
-      },
-      {
-        status: 500,
-      }
-    );
-
-  } finally {
-
-    if (connection) {
-      await connection.close();
-    }
+    return NextResponse.json({ message: "Appointment added successfully" });
+  } catch (error: any) {
+    console.error("POST Appointment Error:", error);
+    return NextResponse.json({ error: "Insert failed" }, { status: 500 });
   }
 }

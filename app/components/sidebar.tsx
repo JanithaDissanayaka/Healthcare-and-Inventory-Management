@@ -120,9 +120,12 @@ export default function Sidebar() {
           <HeartPulse className="text-emerald-400" size={24} />
           <h1 className="text-white font-bold text-lg">CarePulse</h1>
         </div>
-        <button onClick={() => setOpen(true)} className="text-white">
-          <Menu size={28} />
-        </button>
+ <button
+  onClick={() => setOpen(true)}
+  className="text-white"
+>
+  <Menu size={28} />
+</button>
       </div>
 
       {/* MOBILE OVERLAY */}
@@ -132,18 +135,29 @@ export default function Sidebar() {
 
       {/* SIDEBAR CONTAINER */}
       <aside
-        className={`
-          fixed top-0 left-0 z-[60] w-[290px] h-screen bg-[#020817] border-r border-slate-800
-          flex flex-col transition-transform duration-300
-          ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
-      >
+  className={`
+    fixed top-0 left-0
+    z-[60]
+    w-[290px]
+    h-screen
+    bg-[#020817]
+    border-r border-slate-800
+    flex flex-col
+    transition-transform duration-300
+
+    lg:translate-x-0
+    ${open ? 'translate-x-0' : '-translate-x-full'}
+  `}
+>
         {/* HEADER */}
         <div className="flex items-center justify-between p-6 lg:hidden border-b border-slate-800">
           <h2 className="text-white text-xl font-bold">CarePulse</h2>
-          <button onClick={() => setOpen(false)} className="text-white">
-            <X size={26} />
-          </button>
+          <button
+  onClick={() => setOpen(false)}
+  className="text-white"
+>
+  <X size={26} />
+</button>
         </div>
 
         {/* SCROLLABLE LINKS CONTENT */}
@@ -151,7 +165,7 @@ export default function Sidebar() {
           
           {/* BRAND GRADIENT BANNER */}
           <div className="p-6">
-            <div className="bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-3xl p-5 shadow-xl shadow-emerald-500/10">
+            <div className="bg-blue-600 rounded-3xl p-5 shadow-lg">
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur-xl flex items-center justify-center">
                   <HeartPulse className="text-white" size={28} />
@@ -187,10 +201,11 @@ export default function Sidebar() {
                           onClick={() => setOpen(false)}
                           className={`
                             group flex items-center gap-4 px-4 py-3.5 rounded-2xl border transition-all duration-300
-                            ${isActive
-                                ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white border-transparent shadow-lg shadow-emerald-500/20'
-                                : 'border-transparent text-slate-400 hover:bg-slate-900 hover:border-slate-800 hover:text-white'
-                            }
+                            ${
+                              isActive
+                                  ? 'bg-blue-600 text-white border-transparent shadow-md'
+                                  : 'border-transparent text-slate-400 hover:bg-slate-900 hover:border-slate-800 hover:text-white'
+                              }
                           `}
                         >
                           <div
@@ -243,7 +258,7 @@ export default function Sidebar() {
                 <div className="h-3 w-3 rounded-full bg-green-400 animate-pulse"></div>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-700 overflow-hidden">
-                <div className="w-[92%] h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full"></div>
+                <div className="w-[92%] h-full bg-blue-600 rounded-full"></div>
               </div>
               <div className="text-xs text-slate-400 mt-2">Oracle Database Container Active</div>
             </div>
@@ -251,7 +266,7 @@ export default function Sidebar() {
             {/* ADMIN MODULE CONTROL SECTION */}
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4">
               <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-bold text-lg">
+                <div className="h-14 w-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
                   DR
                 </div>
                 <div className="flex-1">
@@ -277,7 +292,7 @@ export default function Sidebar() {
       </aside>
 
       {/* VIEW OFFSET STRIP */}
-      <div className="lg:ml-[290px] pt-[72px] lg:pt-0 min-h-screen" />
+      {/* <div className="lg:ml-[290px] pt-[72px] lg:pt-0 min-h-screen" /> */}
     </>
   );
 }

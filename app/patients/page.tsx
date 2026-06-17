@@ -208,7 +208,7 @@ export default function PatientsPage() {
                   Total Patients
                 </p>
 
-                <h2 className="text-3xl font-bold text-slate-900 mt-2">
+                <h2 className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2">
                   {patients.length}
                 </h2>
 
@@ -379,10 +379,11 @@ export default function PatientsPage() {
         {/* TABLE HEADER */}
         <div
           className="
-            flex items-center justify-between
+            flex flex-col gap-4
+            sm:flex-col md:flex-row sm:items-center sm:justify-between
             p-6
             border-b border-slate-200
-          "
+            "
         >
 
           <div>
@@ -417,7 +418,7 @@ export default function PatientsPage() {
         {/* TABLE */}
         <div className="overflow-x-auto">
 
-          <table className="w-full min-w-[1100px]">
+          <table className="w-full min-w-[800px]">
 
             {/* HEAD */}
             <thead className="bg-slate-50">
@@ -478,16 +479,14 @@ export default function PatientsPage() {
                         {/* AVATAR */}
                         <div
                           className="
-                            h-12 w-12
+                            h-10 w-10 lg:h-12 lg:w-12
                             rounded-2xl
-                            bg-gradient-to-br
-                            from-emerald-500
-                            to-cyan-500
-                            flex items-center justify-center
-                            text-white
-                            font-bold
-                          "
-                        >
+                             bg-blue-600
+                              flex items-center justify-center
+                             text-white
+                              font-bold
+                              "
+                            >
                           {patient.NAME?.charAt(0)}
                         </div>
 

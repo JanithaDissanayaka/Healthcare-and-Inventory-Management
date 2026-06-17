@@ -78,7 +78,7 @@ export default function Topbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200">
+    <header className="hidden lg:block sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200">
       <div className="px-6 lg:px-8 py-5">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           
@@ -102,7 +102,7 @@ export default function Topbar() {
               <input
                 type="search"
                 placeholder="Search..."
-                className="w-[260px] pl-11 pr-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                className="w-full sm:w-[260px] pl-11 pr-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition"
               />
             </div>
 
@@ -120,7 +120,7 @@ export default function Topbar() {
 
               {/* DROPDOWN BOX MODAL */}
               {isOpen && (
-                <div className="absolute right-0 mt-3 w-80 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-3 duration-200">
+                <div className="absolute right-0 mt-3 w-[90vw] sm:w-80 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-3 duration-200">
                   <div className="border-b border-slate-100 px-4 py-3">
                     <h3 className="font-bold text-slate-900">Notifications</h3>
                   </div>
@@ -145,9 +145,10 @@ export default function Topbar() {
 
             {/* ACTION REDIRECT BUTTON */}
             <Link
-              href={current.btnHref}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white px-5 py-3 rounded-2xl font-semibold shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:scale-[1.02]"
-            >
+                href={current.btnHref}
+                className="hidden sm:inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-2xl font-semibold shadow-md transition-all duration-300"
+
+              >
               <Plus size={18} />
               {current.btnText}
             </Link>

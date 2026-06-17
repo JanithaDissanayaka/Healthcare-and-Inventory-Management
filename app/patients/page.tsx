@@ -480,14 +480,12 @@ export default function PatientsPage() {
                           className="
                             h-12 w-12
                             rounded-2xl
-                            bg-gradient-to-br
-                            from-emerald-500
-                            to-cyan-500
-                            flex items-center justify-center
-                            text-white
-                            font-bold
-                          "
-                        >
+                             bg-blue-600
+                              flex items-center justify-center
+                             text-white
+                              font-bold
+                              "
+                            >
                           {patient.NAME?.charAt(0)}
                         </div>
 

@@ -145,8 +145,8 @@ export default function Topbar() {
 
             {/* ACTION REDIRECT BUTTON */}
             <Link
-              href={current.btnHref}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white px-5 py-3 rounded-2xl font-semibold shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:scale-[1.02]"
+                href={current.btnHref}
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-2xl font-semibold shadow-md transition-all duration-300 hover:scale-[1.02]"
             >
               <Plus size={18} />
               {current.btnText}

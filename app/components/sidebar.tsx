@@ -120,9 +120,12 @@ export default function Sidebar() {
           <HeartPulse className="text-emerald-400" size={24} />
           <h1 className="text-white font-bold text-lg">CarePulse</h1>
         </div>
-        <button onClick={() => setOpen(true)} className="text-white">
-          <Menu size={28} />
-        </button>
+ <button
+  onClick={() => setOpen(true)}
+  className="text-white"
+>
+  <Menu size={28} />
+</button>
       </div>
 
       {/* MOBILE OVERLAY */}
@@ -132,18 +135,29 @@ export default function Sidebar() {
 
       {/* SIDEBAR CONTAINER */}
       <aside
-        className={`
-          fixed top-0 left-0 z-[60] w-[290px] h-screen bg-[#020817] border-r border-slate-800
-          flex flex-col transition-transform duration-300
-          ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
-      >
+  className={`
+    fixed top-0 left-0
+    z-[60]
+    w-[290px]
+    h-screen
+    bg-[#020817]
+    border-r border-slate-800
+    flex flex-col
+    transition-transform duration-300
+
+    lg:translate-x-0
+    ${open ? 'translate-x-0' : '-translate-x-full'}
+  `}
+>
         {/* HEADER */}
         <div className="flex items-center justify-between p-6 lg:hidden border-b border-slate-800">
           <h2 className="text-white text-xl font-bold">CarePulse</h2>
-          <button onClick={() => setOpen(false)} className="text-white">
-            <X size={26} />
-          </button>
+          <button
+  onClick={() => setOpen(false)}
+  className="text-white"
+>
+  <X size={26} />
+</button>
         </div>
 
         {/* SCROLLABLE LINKS CONTENT */}
@@ -278,7 +292,7 @@ export default function Sidebar() {
       </aside>
 
       {/* VIEW OFFSET STRIP */}
-      <div className="lg:ml-[290px] pt-[72px] lg:pt-0 min-h-screen" />
+      {/* <div className="lg:ml-[290px] pt-[72px] lg:pt-0 min-h-screen" /> */}
     </>
   );
 }

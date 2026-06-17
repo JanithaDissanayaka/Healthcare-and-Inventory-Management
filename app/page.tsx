@@ -56,7 +56,7 @@ const StatCard = ({ title, value, icon, color, growth }: any) => (
     <div className="flex items-start justify-between relative z-10">
       <div>
         <p className="text-sm text-slate-500 font-semibold">{title}</p>
-        <h2 className="text-4xl font-bold text-slate-900 mt-3">{value}</h2>
+        <h2 className="text-2xl lg:text-4xl font-bold text-slate-900 mt-3">{value}</h2>
         <div className="flex items-center gap-1 mt-4 text-emerald-600 text-sm font-medium">
           <ArrowUpRight size={16} /> {growth}
         </div>
@@ -95,7 +95,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-slate-600 text-lg font-medium animate-pulse">Synchronizing Live Oracle Ledger Metrics...</div>
+        <div className="text-slate-600 text-sm lg:text-lg font-medium animate-pulse text-center px-4">Synchronizing Live Oracle Ledger Metrics...</div>
       </div>
     );
   }
@@ -115,7 +115,7 @@ export default function DashboardPage() {
         
         {/* PATIENT REGISTRATIONS AREA TIMELINE */}
         <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">Patient Admissions</h2>
               <p className="text-slate-500 mt-1">Monthly registration lifecycle trends</p>
@@ -141,7 +141,7 @@ export default function DashboardPage() {
         </div>
 
         {/* INVENTORY CRITICAL LEVEL PIECHART */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+        <div className="bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <PieIcon className="text-cyan-600" size={20} />
             <h3 className="text-xl font-bold text-slate-900">Inventory Allocation</h3>
@@ -155,7 +155,12 @@ export default function DashboardPage() {
                 ))}
               </Pie>
               <Tooltip />
-              <Legend verticalAlign="bottom" height={36}/>
+              <Legend
+                verticalAlign="bottom"
+                wrapperStyle={{
+                    fontSize: '12px'
+                  }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -214,7 +219,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
         <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
           <h2 className="text-xl font-bold text-slate-900 mb-6">Quick Registration Options</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link href="/patients/add" className="p-5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 transition block">
               <Users className="text-emerald-600 mb-3" />
               <h3 className="font-semibold text-slate-900">Register Patient</h3>

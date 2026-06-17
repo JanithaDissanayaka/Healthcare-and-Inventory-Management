@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Trash2,
   CheckCircle,
+  XCircle,
+  CalendarDays,
+  Plus
 } from 'lucide-react';
+import StatusBadge from "@/app/components/StatusBadge";
 
 type Appointment = {
   APPOINTMENT_ID: number;
@@ -16,345 +20,145 @@ type Appointment = {
 };
 
 export default function AppointmentsPage() {
-
-  const [appointments,
-    setAppointments] =
-    useState<Appointment[]>([]);
-
-
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchAppointments();
   }, []);
 
-
-
-
-  const fetchAppointments =
-    async () => {
-
+  const fetchAppointments = async () => {
     try {
-
-      const res =
-        await fetch(
-          '/api/appointments'
-        );
-
-      const data =
-        await res.json();
-
-      setAppointments(
-        data.appointments || []
-      );
-
+      const res = await fetch('/api/appointments');
+      const data = await res.json();
+      setAppointments(data.appointments || []);
     } catch (error) {
-
-      console.error(error);
-
+      console.error("Failed fetching appointments:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-
-
-  const updateStatus =
-    async (
-      id: number,
-      status: string
-    ) => {
-
+  const updateStatus = async (id: number, status: string) => {
     try {
-
-      await fetch(
-        `/api/appointments/${id}`,
-        {
-          method: 'PUT',
-
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-
-          body: JSON.stringify({
-            status,
-          }),
-        }
-      );
-
+      await fetch(`/api/appointments/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
       fetchAppointments();
-
     } catch (error) {
-
-      console.error(error);
-
+      console.error("Failed updating appointment status:", error);
     }
   };
 
-
-
-  const deleteAppointment =
-    async (id: number) => {
-
-    const confirmDelete =
-      confirm(
-        'Delete appointment?'
-      );
-
+  const deleteAppointment = async (id: number) => {
+    const confirmDelete = confirm('Are you sure you want to delete this appointment channel permanently?');
     if (!confirmDelete) return;
 
     try {
-
-      await fetch(
-        `/api/appointments/${id}`,
-        {
-          method: 'DELETE',
-        }
-      );
-
+      await fetch(`/api/appointments/${id}`, { method: 'DELETE' });
       fetchAppointments();
-
     } catch (error) {
-
-      console.error(error);
-
+      console.error("Failed deleting appointment:", error);
     }
   };
-
-
-
-  const getStatusStyle =
-    (status: string) => {
-
-    switch (
-      status?.toUpperCase()
-    ) {
-
-      case 'PENDING':
-        return
-        'bg-yellow-100 text-yellow-700';
-
-      case 'COMPLETED':
-        return
-        'bg-emerald-100 text-emerald-700';
-
-      case 'CANCELLED':
-        return
-        'bg-red-100 text-red-700';
-
-      default:
-        return
-        'bg-slate-100 text-slate-700';
-    }
-  };
-
-
 
   return (
-
-    <div className="p-8 bg-slate-50 min-h-screen">
-
-      <div className="mb-8">
-
-        <h1 className="text-3xl font-bold text-slate-900">
-          Appointments
-        </h1>
-
+    <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
+      
+      {/* HEADER SECTION */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Appointments</h1>
+          <p className="text-slate-500 mt-1">Review sessions, change booking statuses, or drop patient allocations.</p>
+        </div>
+        <Link
+          href="/appointments/add"
+          className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-2xl font-semibold transition"
+        >
+          <Plus size={18} />
+          New Appointment
+        </Link>
       </div>
 
+      {/* TABLE CONTAINER */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center text-slate-500 animate-pulse font-medium">
+            Fetching active scheduling allocations...
+          </div>
+        ) : appointments.length === 0 ? (
+          <div className="p-16 text-center text-slate-400">
+            <CalendarDays size={40} className="mx-auto mb-3 text-slate-300" />
+            <p className="font-medium">No appointments scheduled yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                  <th className="p-5">ID</th>
+                  <th className="p-5">Patient Name</th>
+                  <th className="p-5">Assigned Practitioner</th>
+                  <th className="p-5">Schedule Date</th>
+                  <th className="p-5">Live State</th>
+                  <th className="p-5 text-right">Operational Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                {appointments.map((app) => (
+                  <tr key={app.APPOINTMENT_ID} className="hover:bg-slate-50/60 transition">
+                    <td className="p-5 font-bold text-slate-400">#{app.APPOINTMENT_ID}</td>
+                    <td className="p-5 font-semibold text-slate-900">{app.PATIENT_NAME}</td>
+                    <td className="p-5 font-medium">{app.DOCTOR_NAME}</td>
+                    <td className="p-5 text-slate-600">
+                      {app.APPOINTMENT_DATE ? app.APPOINTMENT_DATE.split('T')[0] : 'N/A'}
+                    </td>
+                    <td className="p-5">
+                      <StatusBadge status={app.STATUS} />
+                    </td>
+                    <td className="p-5">
+                      <div className="flex gap-2 justify-end print:hidden">
+                        
+                        {/* MARK COMPLETED BUTTON */}
+                        <button
+                          onClick={() => updateStatus(app.APPOINTMENT_ID, 'COMPLETED')}
+                          title="Mark Completed"
+                          disabled={app.STATUS === 'COMPLETED'}
+                          className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 transition disabled:opacity-40"
+                        >
+                          <CheckCircle size={16} />
+                        </button>
 
+                        {/* CANCEL BOOKING BUTTON */}
+                        <button
+                          onClick={() => updateStatus(app.APPOINTMENT_ID, 'CANCELLED')}
+                          title="Cancel Session"
+                          disabled={app.STATUS === 'CANCELLED'}
+                          className="p-2.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 transition disabled:opacity-40"
+                        >
+                          <XCircle size={16} />
+                        </button>
 
-      <div
-        className="
-          bg-white
-          rounded-2xl
-          border border-slate-200
-          shadow-sm
-          overflow-hidden
-        "
-      >
+                        {/* PURGE BUTTON */}
+                        <button
+                          onClick={() => deleteAppointment(app.APPOINTMENT_ID)}
+                          title="Purge Allocation"
+                          className="p-2.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100 transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
 
-        <table className="w-full text-sm">
-
-          <thead className="bg-slate-100">
-
-            <tr>
-
-              <th className="p-4">
-                ID
-              </th>
-
-              <th className="p-4">
-                Patient
-              </th>
-
-              <th className="p-4">
-                Doctor
-              </th>
-
-              <th className="p-4">
-                Date
-              </th>
-
-              <th className="p-4">
-                Status
-              </th>
-
-              <th className="p-4">
-                Actions
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-
-          <tbody>
-
-            {appointments.map(
-              (app) => (
-
-              <tr
-                key={
-                  app.APPOINTMENT_ID
-                }
-                className="
-                  border-t
-                "
-              >
-
-                <td className="p-4">
-                  #
-                  {
-                    app.APPOINTMENT_ID
-                  }
-                </td>
-
-                <td className="p-4">
-                  {
-                    app.PATIENT_NAME
-                  }
-                </td>
-
-                <td className="p-4">
-                  {
-                    app.DOCTOR_NAME
-                  }
-                </td>
-
-                <td className="p-4">
-                  {
-                    app
-                    .APPOINTMENT_DATE
-                    ?.split('T')[0]
-                  }
-                </td>
-
-                <td className="p-4">
-
-                  <span
-                    className={`
-                      px-3 py-1
-                      rounded-full
-                      text-xs font-semibold
-                      ${getStatusStyle(
-                        app.STATUS
-                      )}
-                    `}
-                  >
-
-                    {app.STATUS}
-
-                  </span>
-
-                </td>
-
-
-
-                <td className="p-4">
-
-                  <div className="flex gap-3">
-
-                    {/* COMPLETE */}
-                    <button
-                      onClick={() =>
-                        updateStatus(
-                          app.APPOINTMENT_ID,
-                          'COMPLETED'
-                        )
-                      }
-                      className="
-                        px-3 py-2
-                        rounded-xl
-                        bg-emerald-100
-                        text-emerald-700
-                      "
-                    >
-
-                      <CheckCircle
-                        size={16}
-                      />
-
-                    </button>
-
-
-
-                    {/* CANCEL */}
-                    <button
-                      onClick={() =>
-                        updateStatus(
-                          app.APPOINTMENT_ID,
-                          'CANCELLED'
-                        )
-                      }
-                      className="
-                        px-3 py-2
-                        rounded-xl
-                        bg-yellow-100
-                        text-yellow-700
-                      "
-                    >
-
-                      Cancel
-
-                    </button>
-
-
-
-                    {/* DELETE */}
-                    <button
-                      onClick={() =>
-                        deleteAppointment(
-                          app.APPOINTMENT_ID
-                        )
-                      }
-                      className="
-                        px-3 py-2
-                        rounded-xl
-                        bg-red-100
-                        text-red-700
-                      "
-                    >
-
-                      <Trash2
-                        size={16}
-                      />
-
-                    </button>
-
-                  </div>
-
-                </td>
-
-              </tr>
-
-            ))}
-
-          </tbody>
-
-        </table>
-
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-
     </div>
   );
 }

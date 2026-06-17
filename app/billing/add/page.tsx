@@ -6,13 +6,11 @@ import {
   Wallet,
   User,
   CalendarDays,
-  FileText,
-  DollarSign,
   Plus,
   Trash2,
   Save,
-  CreditCard,
   Receipt,
+  Scissors, // Used as a proxy for clinical dental procedures
 } from 'lucide-react';
 
 type InvoiceItem = {
@@ -25,6 +23,19 @@ type PatientEntry = {
   NAME: string;
 };
 
+// Preset catalog of common Sri Lankan Dental Hospital procedures for quick reference
+const DENTAL_PROCEDURES = [
+  { label: "Dental Consultation & Diagnostics", price: 1500 },
+  { label: "Scaling & Polishing (Full Mouth)", price: 3500 },
+  { label: "Composite (Tooth Colored) Filling", price: 4000 },
+  { label: "Root Canal Therapy (RCT) - Anterior", price: 12000 },
+  { label: "Simple Tooth Extraction", price: 2500 },
+  { label: "Surgical Extraction (Impacted Wisdom Tooth)", price: 18000 },
+  { label: "Digital Dental X-Ray (Periapical/OPG)", price: 12000 },
+  { label: "Orthodontic (Braces) Monthly Adjustment", price: 5000 },
+  { label: "Acrylic Partial Denture", price: 8000 },
+];
+
 export default function AddBillingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -34,7 +45,11 @@ export default function AddBillingPage() {
   const [patient, setPatient] = useState('');
   const [billingDate, setBillingDate] = useState('');
   const [status, setStatus] = useState('Pending');
-  const [items, setItems] = useState<InvoiceItem[]>([{ description: '', amount: 0 }]);
+  
+  // Set the first item to a standard dental consultation checkup as a smart default
+  const [items, setItems] = useState<InvoiceItem[]>([
+    { description: 'Dental Consultation & Diagnostics', amount: 1500 }
+  ]);
 
   // Fetch registered patients for the selection box dropdown list
   useEffect(() => {
@@ -65,6 +80,19 @@ export default function AddBillingPage() {
     setItems(updated);
   };
 
+  // Helper to auto-fill description and price if they choose a common preset option
+  const handleSelectPreset = (index: number, procedureLabel: string) => {
+    const found = DENTAL_PROCEDURES.find(p => p.label === procedureLabel);
+    if (found) {
+      const updated = [...items];
+      updated[index] = {
+        description: found.label,
+        amount: found.price
+      };
+      setItems(updated);
+    }
+  };
+
   const addItem = () => setItems([...items, { description: '', amount: 0 }]);
   const removeItem = (index: number) => {
     if (items.length === 1) return;
@@ -88,7 +116,7 @@ export default function AddBillingPage() {
       });
 
       if (res.ok) {
-        alert('Invoice created successfully inside Oracle database');
+        alert('Dental Invoice created successfully inside Oracle database');
         router.push('/billing');
       } else {
         const err = await res.json();
@@ -96,7 +124,7 @@ export default function AddBillingPage() {
       }
     } catch (error) {
       console.error(error);
-      alert('Error creating invoice record');
+      alert('Error creating dental invoice record');
     } finally {
       setLoading(false);
     }
@@ -108,14 +136,14 @@ export default function AddBillingPage() {
         
         {/* HEADER */}
         <div className="bg-white border-b border-slate-200 px-8 py-7 relative">
-          <div className="absolute right-10 top-6 h-24 w-24 rounded-full bg-emerald-50"></div>
+          <div className="absolute right-10 top-6 h-24 w-24 rounded-full bg-cyan-50"></div>
           <div className="relative flex items-center gap-5">
-            <div className="h-16 w-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-              <Wallet className="text-emerald-600" size={28} />
+            <div className="h-16 w-16 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center">
+              <Receipt className="text-cyan-600" size={28} />
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-slate-900">Create Invoice</h2>
-              <p className="text-slate-500 mt-2 text-base">Generate itemized billing invoices for patient checkout healthcare services.</p>
+              <h2 className="text-3xl font-bold text-slate-900">CarePulse Dental Billing</h2>
+              <p className="text-slate-500 mt-2 text-base">Generate itemized invoices for dental treatments, surgeries, and orthodontic procedures.</p>
             </div>
           </div>
         </div>
@@ -125,7 +153,7 @@ export default function AddBillingPage() {
           {/* PATIENT LOOKUPS */}
           <section>
             <div className="flex items-center gap-3 mb-6">
-              <User size={18} className="text-emerald-600" />
+              <User size={18} className="text-cyan-600" />
               <h3 className="text-lg font-bold text-slate-900">Patient Details</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -135,7 +163,7 @@ export default function AddBillingPage() {
                   value={patient}
                   onChange={(e) => setPatient(e.target.value)}
                   required
-                  className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900"
+                  className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-cyan-500 text-slate-900"
                 >
                   <option value="">-- Choose Registered Patient --</option>
                   {patientList.map(p => (
@@ -145,13 +173,13 @@ export default function AddBillingPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-3">Billing Invoice Date</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-3">Treatment Date</label>
                 <input
                   type="date"
                   value={billingDate}
                   onChange={(e) => setBillingDate(e.target.value)}
                   required
-                  className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900"
+                  className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-cyan-500 text-slate-900"
                 />
               </div>
             </div>
@@ -161,15 +189,15 @@ export default function AddBillingPage() {
           <section>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <Receipt size={18} className="text-cyan-600" />
-                <h3 className="text-lg font-bold text-slate-900">Invoice Items</h3>
+                <Scissors className="text-cyan-600" size={18} />
+                <h3 className="text-lg font-bold text-slate-900">Dental Operations & Procedures</h3>
               </div>
               <button
                 type="button"
                 onClick={addItem}
-                className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold transition"
+                className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-cyan-50 hover:bg-cyan-100 text-cyan-700 font-semibold transition"
               >
-                <Plus size={18} /> Add Service Line
+                <Plus size={18} /> Add Treatment Row
               </button>
             </div>
 
@@ -177,19 +205,37 @@ export default function AddBillingPage() {
               {items.map((item, index) => (
                 <div key={index} className="p-5 rounded-3xl border border-slate-200 bg-slate-50">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
-                    <div className="md:col-span-7">
+                    
+                    {/* QUICK PRESET DROPDOWN */}
+                    <div className="md:col-span-3">
+                      <label className="block text-sm font-semibold text-slate-700 mb-3">Quick Select Template</label>
+                      <select
+                        onChange={(e) => handleSelectPreset(index, e.target.value)}
+                        className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                        defaultValue=""
+                      >
+                        <option value="">-- Custom Entry --</option>
+                        {DENTAL_PROCEDURES.map((p, pIdx) => (
+                          <option key={pIdx} value={p.label}>{p.label} (Rs. {p.price})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* DESCRIPTION FIELD */}
+                    <div className="md:col-span-5">
                       <label className="block text-sm font-semibold text-slate-700 mb-3">Service Description</label>
                       <input
                         type="text"
                         value={item.description}
                         required
                         onChange={(e) => updateItem(index, 'description', e.target.value)}
-                        placeholder="e.g. OPD Consultation Fee, Lab Test"
-                        className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-500"
+                        placeholder="e.g. Lower Left Molar Filling, Orthodontic Retainers"
+                        className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-cyan-500"
                       />
                     </div>
 
-                    <div className="md:col-span-3">
+                    {/* AMOUNT FIELD */}
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-3">Amount (LKR)</label>
                       <input
                         type="number"
@@ -197,10 +243,11 @@ export default function AddBillingPage() {
                         required
                         onChange={(e) => updateItem(index, 'amount', e.target.value)}
                         placeholder="0.00"
-                        className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-cyan-500"
                       />
                     </div>
 
+                    {/* REMOVE ITEM BUTTON */}
                     <div className="md:col-span-2">
                       <button
                         type="button"
@@ -220,8 +267,8 @@ export default function AddBillingPage() {
           <section className="rounded-3xl border border-slate-200 bg-slate-50 p-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
               <div>
-                <p className="text-sm text-slate-500">Calculated Grand Total (Rs.)</p>
-                <h2 className="text-5xl font-bold text-emerald-600 mt-3">Rs. {total.toFixed(2)}</h2>
+                <p className="text-sm text-slate-500">Calculated Dental Total (Rs.)</p>
+                <h2 className="text-5xl font-bold text-cyan-600 mt-3">Rs. {total.toFixed(2)}</h2>
               </div>
 
               <div>
@@ -229,11 +276,11 @@ export default function AddBillingPage() {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900"
+                  className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-cyan-500 text-slate-900"
                 >
-                  <option value="Draft">Draft</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Paid">Paid</option>
+                  <option value="Draft">Draft / Treatment Planned</option>
+                  <option value="Pending">Pending Payment</option>
+                  <option value="Paid">Settled / Paid</option>
                 </select>
               </div>
             </div>
@@ -244,9 +291,9 @@ export default function AddBillingPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-semibold transition disabled:opacity-70"
+              className="flex-1 flex items-center justify-center gap-3 bg-cyan-600 hover:bg-cyan-700 text-white py-4 rounded-2xl font-semibold transition disabled:opacity-70"
             >
-              <Save size={20} /> {loading ? 'Registering Invoices...' : 'Save and Issue Invoice'}
+              <Save size={20} /> {loading ? 'Registering Invoices...' : 'Save and Issue Dental Invoice'}
             </button>
             <button
               type="button"

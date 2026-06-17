@@ -223,14 +223,14 @@ export default function AddInventoryPage() {
 
               {/* UNIT PRICE */}
               <InputField
-                label="Unit Price"
-                type="number"
-                name="unitPrice"
-                value={formData.unitPrice}
-                onChange={handleChange}
-                placeholder="250"
-                icon={<DollarSign size={18} />}
-              />
+  label="Unit Price (Rs.)"
+  type="number"
+  name="unitPrice"
+  value={formData.unitPrice}
+  onChange={handleChange}
+  placeholder="250.00"
+  icon={<span className="font-bold">Rs</span>}
+/>
 
             </div>
 

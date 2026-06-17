@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import {
   LayoutDashboard,
@@ -23,11 +23,14 @@ import {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   
-  // Real-time notification badge states
+  // Dynamic metrics state hooks
   const [appointmentBadge, setAppointmentBadge] = useState<string>('');
   const [inventoryBadge, setInventoryBadge] = useState<string>('');
+  const [systemHealth, setSystemHealth] = useState<string>('Initializing systems...');
+  const [performance, setPerformance] = useState<number>(92);
 
   // Fetch dynamic database flags on component mount
   useEffect(() => {
@@ -36,78 +39,54 @@ export default function Sidebar() {
         const res = await fetch('/api/sidebar-metrics');
         if (res.ok) {
           const data = await res.json();
-          
-          // Show appointment badge only if there are pending actions
           setAppointmentBadge(data.appointmentsCount > 0 ? String(data.appointmentsCount) : '');
-          
-          // Show inventory warning flag if items run below limits
           setInventoryBadge(data.lowStockCount > 0 ? String(data.lowStockCount) : '');
+          setSystemHealth(data.systemHealth);
+          setPerformance(data.performance);
         }
       } catch (error) {
         console.error("Error reading sidebar badge statuses:", error);
+        setSystemHealth("Network Error");
+        setPerformance(0);
       }
     }
     fetchBadges();
-  }, [pathname]); // Refresh when user navigates to update metrics dynamically
+  }, [pathname]);
+
+  const handleLogout = () => {
+    const doubleCheck = confirm("Are you sure you want to log out of CarePulse?");
+    if (doubleCheck) {
+      // Clear local session storage keys here if applicable
+      router.push('/login'); 
+    }
+  };
+
+  const handleOpenSettings = () => {
+    alert("CarePulse Dental System Configuration:\n\nOracle Container Target: Localhost\nPort: 1521\nSchema Context: XEPDB1\n\nProfile modification tools are available inside Doctor/User admin modules.");
+  };
 
   const navSections = [
     {
       category: 'MAIN',
       items: [
-        {
-          name: 'Dashboard',
-          href: '/',
-          icon: LayoutDashboard,
-        },
+        { name: 'Dashboard', href: '/', icon: LayoutDashboard },
       ],
     },
     {
       category: 'CLINICAL',
       items: [
-        {
-          name: 'Patients',
-          href: '/patients',
-          icon: Users,
-        },
-        {
-          name: 'Doctors',
-          href: '/doctors',
-          icon: Stethoscope,
-        },
-        {
-          name: 'Appointments',
-          href: '/appointments',
-          icon: CalendarDays,
-          badge: appointmentBadge,
-          danger: false
-        },
+        { name: 'Patients', href: '/patients', icon: Users },
+        { name: 'Doctors', href: '/doctors', icon: Stethoscope },
+        { name: 'Appointments', href: '/appointments', icon: CalendarDays, badge: appointmentBadge, danger: false },
       ],
     },
     {
       category: 'OPERATIONS',
       items: [
-        {
-          name: 'Inventory',
-          href: '/inventory',
-          icon: Boxes,
-          badge: inventoryBadge,
-          danger: true,
-        },
-        {
-          name: 'Suppliers',
-          href: '/suppliers',
-          icon: Truck,
-        },
-        {
-          name: 'Billing',
-          href: '/billing',
-          icon: CreditCard,
-        },
-        {
-          name: 'Reports',
-          href: '/reports',
-          icon: FileBarChart2,
-        },
+        { name: 'Inventory', href: '/inventory', icon: Boxes, badge: inventoryBadge, danger: true },
+        { name: 'Suppliers', href: '/suppliers', icon: Truck },
+        { name: 'Billing', href: '/billing', icon: CreditCard },
+        { name: 'Reports', href: '/reports', icon: FileBarChart2 },
       ],
     },
   ];
@@ -120,12 +99,9 @@ export default function Sidebar() {
           <HeartPulse className="text-emerald-400" size={24} />
           <h1 className="text-white font-bold text-lg">CarePulse</h1>
         </div>
- <button
-  onClick={() => setOpen(true)}
-  className="text-white"
->
-  <Menu size={28} />
-</button>
+        <button onClick={() => setOpen(true)} className="text-white">
+          <Menu size={28} />
+        </button>
       </div>
 
       {/* MOBILE OVERLAY */}
@@ -135,29 +111,18 @@ export default function Sidebar() {
 
       {/* SIDEBAR CONTAINER */}
       <aside
-  className={`
-    fixed top-0 left-0
-    z-[60]
-    w-[290px]
-    h-screen
-    bg-[#020817]
-    border-r border-slate-800
-    flex flex-col
-    transition-transform duration-300
-
-    lg:translate-x-0
-    ${open ? 'translate-x-0' : '-translate-x-full'}
-  `}
->
+        className={`
+          fixed top-0 left-0 z-[60] w-[290px] h-screen bg-[#020817] border-r border-slate-800
+          flex flex-col transition-transform duration-300
+          lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
         {/* HEADER */}
         <div className="flex items-center justify-between p-6 lg:hidden border-b border-slate-800">
           <h2 className="text-white text-xl font-bold">CarePulse</h2>
-          <button
-  onClick={() => setOpen(false)}
-  className="text-white"
->
-  <X size={26} />
-</button>
+          <button onClick={() => setOpen(false)} className="text-white">
+            <X size={26} />
+          </button>
         </div>
 
         {/* SCROLLABLE LINKS CONTENT */}
@@ -173,7 +138,7 @@ export default function Sidebar() {
                 <div>
                   <h1 className="text-2xl font-bold text-white">CarePulse</h1>
                   <div className="flex items-center gap-2 mt-1">
-                    <div className="h-2 w-2 rounded-full bg-green-300 animate-pulse"></div>
+                    <div className={`h-2 w-2 rounded-full animate-pulse ${performance > 0 ? 'bg-green-300' : 'bg-red-500'}`}></div>
                     <span className="text-sm text-white/80">System Connected</span>
                   </div>
                 </div>
@@ -201,11 +166,10 @@ export default function Sidebar() {
                           onClick={() => setOpen(false)}
                           className={`
                             group flex items-center gap-4 px-4 py-3.5 rounded-2xl border transition-all duration-300
-                            ${
-                              isActive
+                            ${isActive
                                   ? 'bg-blue-600 text-white border-transparent shadow-md'
                                   : 'border-transparent text-slate-400 hover:bg-slate-900 hover:border-slate-800 hover:text-white'
-                              }
+                            }
                           `}
                         >
                           <div
@@ -219,7 +183,6 @@ export default function Sidebar() {
 
                           <div className="flex-1 font-medium">{item.name}</div>
 
-                          {/* SYSTEM NOTIFICATION BADGE ELEMENT */}
                           {item.badge ? (
                             <div
                               className={`
@@ -253,14 +216,21 @@ export default function Sidebar() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-white font-semibold">System Health</h3>
-                  <p className="text-slate-400 text-sm mt-1">All services operational</p>
+                  <p className={`text-sm mt-1 font-medium ${performance > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {systemHealth}
+                  </p>
                 </div>
-                <div className="h-3 w-3 rounded-full bg-green-400 animate-pulse"></div>
+                <div className={`h-3 w-3 rounded-full animate-pulse ${performance > 0 ? 'bg-green-400' : 'bg-red-500'}`}></div>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-700 overflow-hidden">
-                <div className="w-[92%] h-full bg-blue-600 rounded-full"></div>
+                <div 
+                  className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                  style={{ width: `${performance}%` }}
+                ></div>
               </div>
-              <div className="text-xs text-slate-400 mt-2">Oracle Database Container Active</div>
+              <div className="text-xs text-slate-400 mt-2">
+                {performance > 0 ? `${performance}% Oracle Container Response` : "Oracle Container Disconnected"}
+              </div>
             </div>
 
             {/* ADMIN MODULE CONTROL SECTION */}
@@ -276,11 +246,17 @@ export default function Sidebar() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 mt-5">
-                <button className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 transition text-slate-300 text-sm font-medium">
+                <button 
+                  onClick={handleOpenSettings}
+                  className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 transition text-slate-300 text-sm font-medium"
+                >
                   <Settings size={16} />
                   Settings
                 </button>
-                <button className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-500/10 hover:bg-red-500/20 transition text-red-400 text-sm font-medium">
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-500/10 hover:bg-red-500/20 transition text-red-400 text-sm font-medium"
+                >
                   <LogOut size={16} />
                   Logout
                 </button>
@@ -290,9 +266,6 @@ export default function Sidebar() {
           </div>
         </div>
       </aside>
-
-      {/* VIEW OFFSET STRIP */}
-      {/* <div className="lg:ml-[290px] pt-[72px] lg:pt-0 min-h-screen" /> */}
     </>
   );
 }

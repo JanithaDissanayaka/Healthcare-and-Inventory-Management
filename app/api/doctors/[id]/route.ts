@@ -1,77 +1,33 @@
-import { NextResponse } from "next/server";
-import { executeQuery } from "@/lib/db";
-
-// ===============================
-// GET SINGLE DOCTOR
-// ===============================
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// app/api/doctors/route.ts
+export async function GET() {
   try {
-    const { id } = await params;
-
-    const result = await executeQuery(`
-      SELECT doctor_id AS ID, name, specialization, phone, email, salary
+    const doctors = await executeQuery(`
+      SELECT 
+        doctor_id AS ID, 
+        name, 
+        specialization, 
+        phone, 
+        email, 
+        salary, 
+        created_at
       FROM doctors
-      WHERE doctor_id = :id
-    `, [Number(id)]);
+      ORDER BY doctor_id DESC
+    `);
 
-    if (!result || result.length === 0) {
-      return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
-    }
+    const activeDutySummary = await executeQuery(`
+      SELECT COUNT(DISTINCT doctor_id) AS ACTIVE_COUNT 
+      FROM appointments 
+      WHERE status IN ('PENDING', 'COMPLETED')
+    `);
 
-    return NextResponse.json(result[0]);
+    // Ensure this returns an object with array inside
+    return NextResponse.json({
+      doctorsList: doctors || [],
+      activeOnDuty: activeDutySummary[0]?.ACTIVE_COUNT || 0
+    });
+
   } catch (error) {
-    console.error("GET Doctor Error:", error);
-    return NextResponse.json({ error: "Failed to fetch record" }, { status: 500 });
-  }
-}
-
-// ===============================
-// UPDATE DOCTOR
-// ===============================
-export async function PUT(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const body = await req.json();
-    const { id } = await params;
-
-    await executeQuery(`
-      UPDATE doctors
-      SET phone = :phone,
-          email = :email,
-          salary = :salary
-      WHERE doctor_id = :id
-    `, [body.phone, body.email, body.salary ? Number(body.salary) : null, Number(id)]);
-
-    return NextResponse.json({ message: "Doctor updated successfully" });
-  } catch (error) {
-    console.error("UPDATE Doctor Error:", error);
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
-  }
-}
-
-// ===============================
-// DELETE DOCTOR
-// ===============================
-export async function DELETE(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    await executeQuery(`
-      DELETE FROM doctors
-      WHERE doctor_id = :id
-    `, [Number(id)]);
-
-    return NextResponse.json({ message: "Doctor deleted successfully" });
-  } catch (error) {
-    console.error("DELETE Doctor Error:", error);
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
 }

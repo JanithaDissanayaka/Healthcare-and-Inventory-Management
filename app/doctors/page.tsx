@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Phone,
   Award,
-  Star,
   Users,
   Trash2,
+  Plus,
+  Search,
+  Clock3,
 } from 'lucide-react';
 
 type Doctor = {
@@ -20,23 +23,31 @@ type Doctor = {
 
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [activeOnDuty, setActiveOnDuty] = useState<number>(0);
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const fetchDoctors = async () => {
+    try {
+      const res = await fetch('/api/doctors');
+      if (res.ok) {
+        const data = await res.json();
+        // Sets data using the safe matching property shapes
+        setDoctors(Array.isArray(data.doctorsList) ? data.doctorsList : []);
+        setActiveOnDuty(data.activeOnDuty || 0);
+      }
+    } catch (error) {
+      console.error("Error reading clinical registers:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchDoctors();
   }, []);
 
-  const fetchDoctors = async () => {
-    try {
-      const res = await fetch('/api/doctors');
-      const data = await res.json();
-
-      setDoctors(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
+  // Safe checks for lowercase/uppercase fallback bindings
   const filteredDoctors = doctors.filter(
     (doc) =>
       doc.NAME?.toLowerCase().includes(search.toLowerCase()) ||
@@ -45,253 +56,140 @@ export default function DoctorsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
-      {/* SEARCH */}
-      <div className="mb-6">
+      
+
+      {/* SEARCH LAYOUT */}
+      <div className="relative mb-8">
+        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
-          placeholder="Search doctors..."
+          placeholder="Search specialists by name or department..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500"
+          onChange={(e) => setSearch(e.target.value)} // Fixed: Added standard functional parentheses execution call
+          className="w-full lg:w-[400px] pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
         />
       </div>
 
-      {/* STATS */}
+      {/* ANALYTICS SUMMARY SHIPS HEADER */}
       <div className="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-2">
-          {/* TOTAL */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          
+          {/* TOTAL DOCTORS */}
           <div className="rounded-3xl bg-slate-50 border border-slate-200 p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500">Total Doctors</p>
-                <h2 className="text-3xl font-bold text-slate-900 mt-2">
-                  {doctors.length}
-                </h2>
+                <p className="text-sm text-slate-500 font-semibold">Total Specialists</p>
+                <h2 className="text-3xl font-bold text-slate-900 mt-2">{doctors.length}</h2>
               </div>
-
               <div className="h-14 w-14 rounded-2xl bg-cyan-100 flex items-center justify-center">
                 <Users className="text-cyan-600" size={24} />
               </div>
             </div>
           </div>
 
-          {/* SPECIALISTS */}
+          {/* DENTAL DEPARTMENTS */}
           <div className="rounded-3xl bg-slate-50 border border-slate-200 p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500">Specializations</p>
-
+                <p className="text-sm text-slate-500 font-semibold">Dental Departments</p>
                 <h2 className="text-3xl font-bold text-slate-900 mt-2">
-                  {
-                    new Set(
-                      doctors.map((d) => d.SPECIALIZATION)
-                    ).size
-                  }
+                  {new Set(doctors.map((d) => d.SPECIALIZATION)).size}
                 </h2>
               </div>
-
               <div className="h-14 w-14 rounded-2xl bg-emerald-100 flex items-center justify-center">
                 <Award className="text-emerald-600" size={24} />
               </div>
             </div>
           </div>
 
-          {/* AVERAGE SALARY */}
+          {/* ACTIVE ON-DUTY STAFF MODULE */}
           <div className="rounded-3xl bg-slate-50 border border-slate-200 p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500">
-                  Average Salary
-                </p>
-
-                <h2 className="text-3xl font-bold text-slate-900 mt-2">
-                  Rs.
-                  {doctors.length
-                    ? Math.round(
-                        doctors.reduce(
-                          (acc, cur) => acc + Number(cur.SALARY),
-                          0
-                        ) / doctors.length
-                      ).toLocaleString()
-                    : 0}
+                <p className="text-sm text-slate-500 font-semibold">Active On-Duty Staff</p>
+                <h2 className="text-3xl font-bold text-cyan-600 mt-2">
+                  {activeOnDuty} / {doctors.length} Shifts Active
                 </h2>
               </div>
-
-              <div className="h-14 w-14 rounded-2xl bg-orange-100 flex items-center justify-center">
-                <Star className="text-orange-600" size={24} />
+              <div className="h-14 w-14 rounded-2xl bg-cyan-100/70 flex items-center justify-center animate-pulse">
+                <Clock3 className="text-cyan-600" size={24} />
               </div>
             </div>
           </div>
+
         </div>
       </div>
 
-      {/* DOCTORS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
-        {filteredDoctors.map((doc) => (
-          <div
-            key={doc.ID}
-            className="
-              group
-              bg-white
-              rounded-3xl
-              border border-slate-200
-              p-6
-              shadow-sm
-              hover:shadow-2xl
-              hover:-translate-y-1
-              transition-all
-              duration-300
-              overflow-hidden
-              relative
-            "
-          >
-            <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-cyan-50"></div>
+      {/* DOCTORS CARDS DISPLAY GRID */}
+      {loading ? (
+        <div className="text-slate-500 text-center py-12 font-medium animate-pulse">Syncing clinical registries...</div>
+      ) : filteredDoctors.length === 0 ? (
+        <div className="text-slate-400 text-center py-12 font-medium">No dental practitioners match the search query.</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
+          {filteredDoctors.map((doc) => (
+            <div
+              key={doc.ID}
+              className="group bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden relative"
+            >
+              <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-cyan-50/60 group-hover:scale-110 transition-transform duration-300"></div>
 
-            {/* HEADER */}
-            <div className="relative flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div
-                  className="
-                    h-16 w-16
-                    rounded-2xl
-                    bg-gradient-to-br
-                    from-cyan-500
-                    to-blue-500
-                    flex
-                    items-center
-                    justify-center
-                    text-white
-                    text-xl
-                    font-bold
-                    shadow-lg
-                    shadow-cyan-500/20
-                  "
-                >
-                  {doc.NAME?.charAt(0)}
+              {/* PROFILE IDENTITY BLOCK */}
+              <div className="relative flex items-center gap-4">
+                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-cyan-500/10">
+                  {doc.NAME ? doc.NAME.charAt(0).toUpperCase() : 'D'}
                 </div>
-
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">
-                    {doc.NAME}
-                  </h2>
-
-                  <p className="text-cyan-600 font-medium mt-1">
-                    {doc.SPECIALIZATION}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* DETAILS */}
-            <div className="mt-8 space-y-4 relative">
-              {/* PHONE */}
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50">
-                <div className="h-10 w-10 rounded-xl bg-cyan-100 flex items-center justify-center">
-                  <Phone
-                    size={18}
-                    className="text-cyan-600"
-                  />
-                </div>
-
-                <div>
-                  <p className="text-xs text-slate-500">
-                    Contact Number
-                  </p>
-
-                  <p className="font-semibold text-slate-800">
-                    {doc.PHONE}
-                  </p>
+                  <h2 className="text-xl font-bold text-slate-900">{doc.NAME}</h2>
+                  <p className="text-cyan-600 font-semibold mt-0.5 text-sm">{doc.SPECIALIZATION}</p>
                 </div>
               </div>
 
-              {/* EMAIL */}
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50">
-                <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                  @
+              {/* DETAILS */}
+              <div className="mt-6 space-y-3 relative">
+                <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50">
+                  <div className="h-9 w-9 rounded-xl bg-cyan-50 flex items-center justify-center text-cyan-600"><Phone size={16} /></div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Contact Connection</p>
+                    <p className="font-semibold text-slate-800 text-sm mt-0.5">{doc.PHONE}</p>
+                  </div>
                 </div>
 
-                <div>
-                  <p className="text-xs text-slate-500">
-                    Email
-                  </p>
-
-                  <p className="font-semibold text-slate-800 break-all">
-                    {doc.EMAIL}
-                  </p>
-                </div>
-              </div>
-
-              {/* SALARY */}
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50">
-                <div className="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center">
-                  <Award
-                    size={18}
-                    className="text-orange-600"
-                  />
-                </div>
-
-                <div>
-                  <p className="text-xs text-slate-500">
-                    Salary
-                  </p>
-
-                  <p className="font-semibold text-slate-800">
-                    Rs. {Number(doc.SALARY).toLocaleString()}
-                  </p>
+                <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50">
+                  <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 text-sm font-bold">@</div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Email Address</p>
+                    <p className="font-semibold text-slate-800 text-sm mt-0.5 truncate">{doc.EMAIL}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* DELETE BUTTON */}
-            <div className="mt-6">
-              <button
-                onClick={async () => {
-                  const confirmDelete = confirm(
-                    'Delete doctor?'
-                  );
+              {/* PURGE DISCHARGE TRIGGER BUTTON */}
+              <div className="mt-6 relative z-10">
+                <button
+                  onClick={async () => {
+                    const confirmDelete = confirm('Discharge practitioner and remove permanently from active clinical rotations?');
+                    if (!confirmDelete) return;
 
-                  if (!confirmDelete) return;
-
-                  try {
-                    const res = await fetch(
-                      `/api/doctors/${doc.ID}`,
-                      {
-                        method: 'DELETE',
-                      }
-                    );
-
-                    if (!res.ok) {
-                      throw new Error('Delete failed');
+                    try {
+                      const res = await fetch(`/api/doctors/${doc.ID}`, { method: 'DELETE' });
+                      if (!res.ok) throw new Error('Delete operation rejected');
+                      fetchDoctors();
+                    } catch (error) {
+                      console.error(error);
+                      alert('Failed to remove physician from system');
                     }
-
-                    fetchDoctors();
-                  } catch (error) {
-                    console.error(error);
-                    alert('Failed to delete doctor');
-                  }
-                }}
-                className="
-                  w-full
-                  flex
-                  items-center
-                  justify-center
-                  gap-3
-                  py-3
-                  rounded-2xl
-                  bg-red-50
-                  hover:bg-red-100
-                  text-red-700
-                  font-semibold
-                  transition
-                "
-              >
-                <Trash2 size={18} />
-                Delete Doctor
-              </button>
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm transition"
+                >
+                  <Trash2 size={16} />
+                  Remove Specialist
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

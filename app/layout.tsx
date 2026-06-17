@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "./components/sidebar";
 import Topbar from "./components/topbar";
+import AIChat from "./components/ai-chat";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +43,7 @@ export default function RootLayout({
             {children}
           </div>
         </main>
+        <AIChat />
       </body>
     </html>
   );

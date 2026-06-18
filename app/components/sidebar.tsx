@@ -19,6 +19,7 @@ import {
   LogOut,
   Menu,
   X,
+  Warehouse // Added new icon for the combined Supply Dashboard
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -83,6 +84,8 @@ export default function Sidebar() {
     {
       category: 'OPERATIONS',
       items: [
+        // NEW COMBINED DASHBOARD BUTTON
+        { name: 'Supply Dashboard', href: '/supply-dashboard', icon: Warehouse },
         { name: 'Inventory', href: '/inventory', icon: Boxes, badge: inventoryBadge, danger: true },
         { name: 'Suppliers', href: '/suppliers', icon: Truck },
         { name: 'Billing', href: '/billing', icon: CreditCard },

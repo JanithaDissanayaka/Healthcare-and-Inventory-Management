@@ -67,20 +67,6 @@ export default function AppointmentsPage() {
   return (
     <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
       
-      {/* HEADER SECTION */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Appointments</h1>
-          <p className="text-slate-500 mt-1">Review sessions, change booking statuses, or drop patient allocations.</p>
-        </div>
-        <Link
-          href="/appointments/add"
-          className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-2xl font-semibold transition"
-        >
-          <Plus size={18} />
-          New Appointment
-        </Link>
-      </div>
 
       {/* TABLE CONTAINER */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">

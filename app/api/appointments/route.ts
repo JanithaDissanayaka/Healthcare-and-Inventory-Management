@@ -42,10 +42,58 @@ export async function GET() {
       )
     `);
 
+    // 4. NEW: Appointments grouped by status (for Donut chart)
+    const statusBreakdown = await executeQuery(`
+      SELECT
+        a.STATUS AS STATUS_KEY,
+        COUNT(*) AS TOTAL
+      FROM appointments a
+      GROUP BY a.STATUS
+      ORDER BY a.STATUS
+    `);
+
+    // 5. NEW: Raw appointment counts per calendar day, last 14 days
+    // (the continuous 14-day calendar, including zero-count days, is
+    // built in JS below for portability across Oracle editions)
+    const dailyRaw = await executeQuery(`
+      SELECT
+        TO_CHAR(TRUNC(a.appointment_date), 'YYYY-MM-DD') AS DAY_KEY,
+        COUNT(*) AS TOTAL
+      FROM appointments a
+      WHERE a.appointment_date >= TRUNC(SYSDATE) - 13
+        AND a.appointment_date < TRUNC(SYSDATE) + 1
+      GROUP BY TRUNC(a.appointment_date)
+      ORDER BY TRUNC(a.appointment_date) ASC
+    `);
+
+    // Build a continuous 14-day calendar (today and the 13 days before it)
+    // so days with zero appointments still show up as 0 on the chart
+    // instead of being silently skipped.
+    const countsByDay = new Map<string, number>(
+      dailyRaw.map((row: { DAY_KEY: string; TOTAL: number }) => [row.DAY_KEY, Number(row.TOTAL)])
+    );
+    const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const dailyTrend = Array.from({ length: 14 }, (_, i) => {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - (13 - i));
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const dayKey = `${yyyy}-${mm}-${dd}`;
+      return {
+        DAY_KEY: dayKey,
+        DAY_LABEL: `${MONTH_LABELS[d.getMonth()]} ${dd}`,
+        TOTAL: countsByDay.get(dayKey) || 0,
+      };
+    });
+
     return NextResponse.json({
       appointments,
       analytics,
       busyDoctors,
+      statusBreakdown,
+      dailyTrend,
     });
 
   } catch (error: any) {

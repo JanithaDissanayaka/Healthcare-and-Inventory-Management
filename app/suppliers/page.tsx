@@ -16,8 +16,23 @@ import {
   Save,
   Tag,
   MapPin,
-  FileText
+  FileText,
+  PieChart as PieIcon,
+  BarChart3,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts';
 import StatusBadge from "@/app/components/StatusBadge";
 
 type Supplier = {
@@ -124,6 +139,36 @@ export default function SuppliersPage() {
     );
   }, [searchTerm, suppliers]);
 
+  const CATEGORY_COLORS = ['#06B6D4', '#10B981', '#F59E0B', '#6366F1', '#F43F5E', '#8B5CF6', '#84CC16', '#EC4899'];
+  const STATUS_BAR_COLORS: Record<string, string> = {
+    ACTIVE: '#10B981',
+    REVIEW: '#F59E0B',
+    INACTIVE: '#94A3B8',
+  };
+
+  // Donut chart: suppliers grouped by category
+  const categoryChartData = useMemo(() => {
+    const counts = new Map<string, number>();
+    suppliers.forEach((s) => {
+      const key = s.CATEGORY || 'Uncategorized';
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [suppliers]);
+
+  // Bar chart: suppliers grouped by status (Active / Review / and any other
+  // status genuinely present in the data, e.g. Inactive)
+  const statusChartData = useMemo(() => {
+    const counts = new Map<string, number>();
+    suppliers.forEach((s) => {
+      const key = s.STATUS || 'Unknown';
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return Array.from(counts.entries()).map(([name, value]) => ({ name, value }));
+  }, [suppliers]);
+
   return (
     <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
 
@@ -202,6 +247,63 @@ export default function SuppliersPage() {
           </div>
         </div>
       </div>
+
+      {/* ANALYTICS CHARTS GRID */}
+      {!loading && suppliers.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+
+          {/* SUPPLIERS BY CATEGORY — DONUT CHART */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <PieIcon className="text-cyan-600" size={20} />
+              <h3 className="text-xl font-bold text-slate-900">By Category</h3>
+            </div>
+            <p className="text-slate-500 text-sm mb-4">Vendor count per dental supply category</p>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={categoryChartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {categoryChartData.map((entry, index) => (
+                    <Cell key={`cat-cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: '12px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* SUPPLIERS BY STATUS — BAR CHART */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="text-emerald-600" size={20} />
+              <h3 className="text-xl font-bold text-slate-900">By Status</h3>
+            </div>
+            <p className="text-slate-500 text-sm mb-4">Active, under review, and inactive vendors</p>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={statusChartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                <XAxis dataKey="name" stroke="#94A3B8" fontSize={12} tickLine={false} />
+                <YAxis stroke="#94A3B8" fontSize={12} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={56}>
+                  {statusChartData.map((entry, index) => (
+                    <Cell key={`status-cell-${index}`} fill={STATUS_BAR_COLORS[entry.name?.toUpperCase()] || '#94A3B8'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+        </div>
+      )}
 
       {/* DATA LEDGER TABLE */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">

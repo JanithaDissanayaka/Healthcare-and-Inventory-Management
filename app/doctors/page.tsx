@@ -1,13 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Phone,
   Award,
   Star,
   Users,
   Trash2,
+  PieChart as PieIcon,
+  BarChart3,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts';
 
 type Doctor = {
   ID: number;
@@ -43,6 +58,50 @@ export default function DoctorsPage() {
       doc.SPECIALIZATION?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const SPECIALIZATION_COLORS = ['#06B6D4', '#10B981', '#F59E0B', '#6366F1', '#F43F5E', '#8B5CF6', '#84CC16', '#EC4899'];
+
+  const specializationChartData = useMemo(() => {
+    const counts = new Map<string, number>();
+    doctors.forEach((d) => {
+      const key = d.SPECIALIZATION || 'Unspecified';
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [doctors]);
+
+  const salaryHistogramData = useMemo(() => {
+    const salaries = doctors
+      .map((d) => Number(d.SALARY))
+      .filter((s) => Number.isFinite(s) && s > 0);
+    if (salaries.length === 0) return [];
+
+    const min = Math.min(...salaries);
+    const max = Math.max(...salaries);
+    const bucketCount = 6;
+    const rawBucketSize = (max - min) / bucketCount || 1;
+    const bucketSize = Math.ceil(rawBucketSize / 5000) * 5000 || 5000;
+
+    const buckets = Array.from({ length: bucketCount }, (_, i) => {
+      const start = min + i * bucketSize;
+      const end = start + bucketSize;
+      return { start, end, count: 0 };
+    });
+
+    salaries.forEach((s) => {
+      const idx = Math.min(Math.floor((s - min) / bucketSize), bucketCount - 1);
+      buckets[idx].count += 1;
+    });
+
+    return buckets
+      .filter((b) => b.count > 0)
+      .map((b) => ({
+        range: `${Math.round(b.start / 1000)}k-${Math.round(b.end / 1000)}k`,
+        count: b.count,
+      }));
+  }, [doctors]);
+
   return (
     <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
       {/* SEARCH */}
@@ -73,6 +132,15 @@ export default function DoctorsPage() {
                 <Users className="text-cyan-600" size={24} />
               </div>
             </div>
+            <div className="mt-4 h-2 rounded-full bg-cyan-100 overflow-hidden">
+              <div
+                className="h-full bg-cyan-500 rounded-full transition-all"
+                style={{ width: doctors.length > 0 ? '100%' : '0%' }}
+              ></div>
+            </div>
+            <p className="text-xs text-slate-400 mt-2">
+              Across {specializationChartData.length} specialization{specializationChartData.length === 1 ? '' : 's'}
+            </p>
           </div>
 
           {/* SPECIALISTS */}
@@ -124,6 +192,63 @@ export default function DoctorsPage() {
           </div>
         </div>
       </div>
+
+      {/* ANALYTICS CHARTS GRID */}
+      {doctors.length > 0 && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+
+          {/* DOCTORS BY SPECIALIZATION — PIE CHART */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <PieIcon className="text-cyan-600" size={20} />
+              <h3 className="text-xl font-bold text-slate-900">By Specialization</h3>
+            </div>
+            <p className="text-slate-500 text-sm mb-4">Doctor headcount per specialty</p>
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie
+                  data={specializationChartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {specializationChartData.map((entry, index) => (
+                    <Cell key={`spec-cell-${index}`} fill={SPECIALIZATION_COLORS[index % SPECIALIZATION_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: '12px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* SALARY DISTRIBUTION — HISTOGRAM */}
+          <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="text-orange-500" size={20} />
+              <h3 className="text-xl font-bold text-slate-900">Salary Distribution</h3>
+            </div>
+            <p className="text-slate-500 text-sm mb-4">Number of doctors per salary range (Rs.)</p>
+            {salaryHistogramData.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-16">No salary data available.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={salaryHistogramData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                  <XAxis dataKey="range" stroke="#94A3B8" fontSize={12} tickLine={false} />
+                  <YAxis stroke="#94A3B8" fontSize={12} allowDecimals={false} />
+                  <Tooltip formatter={(value) => [value, 'Doctors']} />
+                  <Bar dataKey="count" fill="#F97316" radius={[8, 8, 0, 0]} barSize={48} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+        </div>
+      )}
 
       {/* DOCTORS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">

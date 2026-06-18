@@ -13,7 +13,24 @@ import {
   Search,
   Boxes,
   Trash2,
+  PieChart as PieIcon,
+  BarChart3,
+  Wallet,
 } from 'lucide-react';
+
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts';
 
 type InventoryItem = {
   ITEM_ID: number;
@@ -90,6 +107,58 @@ export default function InventoryPage() {
       );
 
     }, [items, search]);
+
+
+
+  // Pie chart: stock status distribution. The API only ever returns
+  // STATUS as LOW STOCK / AVAILABLE — Out of Stock is derived here from
+  // QUANTITY === 0, since no such status exists in the database itself.
+  const STOCK_STATUS_COLORS: Record<string, string> = {
+    'IN STOCK': '#10B981',
+    'LOW STOCK': '#F59E0B',
+    'OUT OF STOCK': '#F43F5E',
+  };
+
+  const stockStatusChartData = useMemo(() => {
+    let outOfStock = 0;
+    let lowStock = 0;
+    let inStock = 0;
+
+    items.forEach((item) => {
+      const qty = Number(item.QUANTITY);
+      if (qty <= 0) outOfStock += 1;
+      else if (item.STATUS === 'LOW STOCK') lowStock += 1;
+      else inStock += 1;
+    });
+
+    return [
+      { name: 'In Stock', value: inStock },
+      { name: 'Low Stock', value: lowStock },
+      { name: 'Out of Stock', value: outOfStock },
+    ].filter((row) => row.value > 0);
+  }, [items]);
+
+  // Bar chart: top items by quantity on hand
+  const topItemsByQuantity = useMemo(() => {
+    return [...items]
+      .sort((a, b) => Number(b.QUANTITY) - Number(a.QUANTITY))
+      .slice(0, 8)
+      .map((item) => ({
+        name: item.ITEM_NAME,
+        quantity: Number(item.QUANTITY),
+      }));
+  }, [items]);
+
+  // Bar chart: total stock value per item (quantity x unit price)
+  const itemValueChartData = useMemo(() => {
+    return [...items]
+      .map((item) => ({
+        name: item.ITEM_NAME,
+        value: Number(item.QUANTITY) * Number(item.UNIT_PRICE),
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+  }, [items]);
 
 
 
@@ -407,7 +476,98 @@ export default function InventoryPage() {
 
       </div>
 
+      {/* ANALYTICS CHARTS GRID */}
+      {!loading && items.length > 0 && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
 
+          {/* STOCK STATUS DISTRIBUTION — PIE CHART */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <PieIcon className="text-emerald-600" size={20} />
+              <h3 className="text-xl font-bold text-slate-900">Stock Status</h3>
+            </div>
+            <p className="text-slate-500 text-sm mb-4">In stock, low stock, and out of stock split</p>
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie
+                  data={stockStatusChartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {stockStatusChartData.map((entry, index) => (
+                    <Cell
+                      key={`stock-status-cell-${index}`}
+                      fill={STOCK_STATUS_COLORS[entry.name.toUpperCase()] || '#94A3B8'}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: '12px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* TOP ITEMS BY QUANTITY — BAR CHART */}
+          <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="text-cyan-600" size={20} />
+              <h3 className="text-xl font-bold text-slate-900">Top Items by Quantity</h3>
+            </div>
+            <p className="text-slate-500 text-sm mb-4">Highest units currently on hand</p>
+            {topItemsByQuantity.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-16">No inventory data available.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={topItemsByQuantity} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                  <XAxis dataKey="name" stroke="#94A3B8" fontSize={12} tickLine={false} angle={-15} textAnchor="end" height={50} />
+                  <YAxis stroke="#94A3B8" fontSize={12} allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="quantity" fill="#06B6D4" radius={[8, 8, 0, 0]} barSize={36} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          {/* ITEM VALUE BREAKDOWN — BAR CHART */}
+          <div className="xl:col-span-3 bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Wallet className="text-orange-500" size={20} />
+              <h3 className="text-xl font-bold text-slate-900">Item Value Breakdown</h3>
+            </div>
+            <p className="text-slate-500 text-sm mb-4">Total stock value (quantity × unit price), top items</p>
+            {itemValueChartData.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-16">No inventory data available.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={Math.max(220, itemValueChartData.length * 44)}>
+                <BarChart
+                  data={itemValueChartData}
+                  layout="vertical"
+                  margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
+                  <XAxis type="number" stroke="#94A3B8" fontSize={12} tickFormatter={(v) => `${Number(v).toLocaleString()}`} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    stroke="#94A3B8"
+                    fontSize={12}
+                    width={140}
+                    tickLine={false}
+                  />
+                  <Tooltip formatter={(value) => [`Rs. ${Number(value).toLocaleString()}`, 'Stock Value']} />
+                  <Bar dataKey="value" fill="#F97316" radius={[0, 8, 8, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+        </div>
+      )}
 
       {/* TABLE */}
       <div

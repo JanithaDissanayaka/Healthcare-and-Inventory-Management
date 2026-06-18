@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   DollarSign,
   FileText,
@@ -11,8 +11,26 @@ import {
   AlertTriangle,
   Search,
   X,
-  HeartPulse
+  HeartPulse,
+  PieChart as PieIcon,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts';
 import StatusBadge from "@/app/components/StatusBadge";
 
 type Invoice = {
@@ -29,9 +47,26 @@ type InvoiceItem = {
   AMOUNT: number;
 };
 
+type StatusBreakdownRow = { STATUS_KEY: string; TOTAL: number };
+type RevenueTrendRow = { DAY_KEY: string; DAY_LABEL: string; TOTAL: number };
+type TopPatientRow = { PATIENT_NAME: string; TOTAL_BILLED: number };
+
+// Note: billing statuses are stored as 'Paid' / 'Pending' (capitalized,
+// not all-caps like appointment statuses), plus a derived 'Overdue'
+// bucket computed server-side. Keys are matched case-insensitively below.
+const BILLING_STATUS_COLORS: Record<string, string> = {
+  PAID: '#10B981',
+  PENDING: '#F59E0B',
+  OVERDUE: '#F43F5E',
+};
+const FALLBACK_STATUS_COLOR = '#94A3B8';
+
 export default function BillingPage() {
   const [metrics, setMetrics] = useState({ totalInvoices: 0, paidInvoices: 0, overdueInvoices: 0 });
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [statusBreakdown, setStatusBreakdown] = useState<StatusBreakdownRow[]>([]);
+  const [revenueTrend, setRevenueTrend] = useState<RevenueTrendRow[]>([]);
+  const [topPatients, setTopPatients] = useState<TopPatientRow[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [search, setSearch] = useState('');
@@ -50,6 +85,9 @@ export default function BillingPage() {
           overdueInvoices: data.overdueInvoices
         });
         setInvoices(data.invoices || []);
+        setStatusBreakdown(data.statusBreakdown || []);
+        setRevenueTrend(data.revenueTrend || []);
+        setTopPatients(data.topPatients || []);
         if (data.invoices && data.invoices.length > 0 && !selectedInvoice) {
           handleSelectInvoice(data.invoices[0]);
         }
@@ -109,6 +147,39 @@ export default function BillingPage() {
     String(inv.ID).includes(search)
   );
 
+  // Donut chart: invoices grouped by Paid / Pending / Overdue
+  const statusChartData = useMemo(() => {
+    return statusBreakdown
+      .filter((row) => Number(row.TOTAL) > 0)
+      .map((row) => ({
+        name: row.STATUS_KEY,
+        value: Number(row.TOTAL),
+      }));
+  }, [statusBreakdown]);
+
+  const totalStatusCount = useMemo(
+    () => statusChartData.reduce((sum, row) => sum + row.value, 0),
+    [statusChartData]
+  );
+
+  // Area chart: revenue collected per day, last 14 days
+  const revenueChartData = useMemo(() => {
+    return revenueTrend.map((row) => ({
+      day: row.DAY_LABEL,
+      revenue: Number(row.TOTAL),
+    }));
+  }, [revenueTrend]);
+
+  // Horizontal bar chart: top billed patients by total invoiced amount
+  const topPatientsChartData = useMemo(() => {
+    return topPatients
+      .filter((row) => row.PATIENT_NAME) // drop orphaned invoices with no matched patient
+      .map((row) => ({
+        patient: row.PATIENT_NAME,
+        billed: Number(row.TOTAL_BILLED),
+      }));
+  }, [topPatients]);
+
   return (
     <div className="min-h-screen bg-slate-50 p-6 lg:p-8 print:p-0 print:bg-white">
       {/* HIDE ON PRINT ELEMENT WRAPPERS */}
@@ -166,6 +237,122 @@ export default function BillingPage() {
             </div>
           </div>
         </div>
+
+        {/* ANALYTICS CHARTS GRID */}
+        {invoices.length > 0 && (
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+
+            {/* INVOICE STATUS BREAKDOWN — DONUT CHART */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <PieIcon className="text-emerald-600" size={20} />
+                <h3 className="text-xl font-bold text-slate-900">Invoice Status</h3>
+              </div>
+              <p className="text-slate-500 text-sm mb-4">Paid, pending, and overdue split</p>
+              {statusChartData.length === 0 ? (
+                <p className="text-slate-400 text-sm text-center py-16">No invoice data available yet.</p>
+              ) : (
+                <div className="relative">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={statusChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={85}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {statusChartData.map((entry, index) => (
+                          <Cell
+                            key={`billing-status-cell-${index}`}
+                            fill={BILLING_STATUS_COLORS[entry.name?.toUpperCase()] || FALLBACK_STATUS_COLOR}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: '12px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-x-0 top-[78px] text-center pointer-events-none">
+                    <p className="text-2xl font-bold text-slate-900">{totalStatusCount}</p>
+                    <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Total</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* REVENUE OVER TIME — AREA CHART */}
+            <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="text-orange-500" size={20} />
+                <h3 className="text-xl font-bold text-slate-900">Revenue Collected</h3>
+              </div>
+              <p className="text-slate-500 text-sm mb-4">Invoiced amount per day, last 14 days</p>
+              {revenueChartData.length === 0 ? (
+                <p className="text-slate-400 text-sm text-center py-16">No recent billing activity to chart.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={240}>
+                  <AreaChart data={revenueChartData}>
+                    <defs>
+                      <linearGradient id="colorDailyRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#F97316" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#F97316" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                    <XAxis dataKey="day" stroke="#94A3B8" fontSize={12} tickLine={false} />
+                    <YAxis stroke="#94A3B8" fontSize={12} tickFormatter={(v) => `${Number(v).toLocaleString()}`} />
+                    <Tooltip formatter={(value) => [`Rs. ${Number(value).toLocaleString()}`, 'Revenue']} />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#F97316"
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill="url(#colorDailyRevenue)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* TOP BILLED PATIENTS — HORIZONTAL BAR CHART */}
+            <div className="xl:col-span-3 bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="text-cyan-600" size={20} />
+                <h3 className="text-xl font-bold text-slate-900">Top Billed Patients</h3>
+              </div>
+              <p className="text-slate-500 text-sm mb-4">Highest total invoiced amount per patient</p>
+              {topPatientsChartData.length === 0 ? (
+                <p className="text-slate-400 text-sm text-center py-16">No patient billing data available.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={Math.max(220, topPatientsChartData.length * 48)}>
+                  <BarChart
+                    data={topPatientsChartData}
+                    layout="vertical"
+                    margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
+                    <XAxis type="number" stroke="#94A3B8" fontSize={12} tickFormatter={(v) => `${Number(v).toLocaleString()}`} />
+                    <YAxis
+                      type="category"
+                      dataKey="patient"
+                      stroke="#94A3B8"
+                      fontSize={12}
+                      width={140}
+                      tickLine={false}
+                    />
+                    <Tooltip formatter={(value) => [`Rs. ${Number(value).toLocaleString()}`, 'Total Billed']} />
+                    <Bar dataKey="billed" fill="#06B6D4" radius={[0, 8, 8, 0]} barSize={22} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+          </div>
+        )}
 
         {/* DETAILED LEDGER GRID */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">

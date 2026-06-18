@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import { CalendarDays, User, Stethoscope, ClipboardCheck, Save } from 'lucide-react';
 
 type Patient = { PATIENT_ID: number; NAME: string; };
-type Doctor = { DOCTOR_ID: number; NAME: string; };
+type Doctor = { ID: number; NAME: string; };
 
 export default function NewAppointmentForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [doctorsError, setDoctorsError] = useState(false);
 
   const [formData, setFormData] = useState({
     patientId: '',
@@ -39,9 +40,21 @@ export default function NewAppointmentForm() {
     try {
       const res = await fetch('/api/doctors');
       const data = await res.json();
-      setDoctors(data || []);
+      // /api/doctors returns a bare array on success, but an error object
+      // like { error: "Database error" } if the DB connection fails.
+      // Guard against that shape so the dropdown never crashes.
+      if (Array.isArray(data)) {
+        setDoctors(data);
+        setDoctorsError(false);
+      } else {
+        console.error("Doctor list fetch returned a non-array response:", data);
+        setDoctors([]);
+        setDoctorsError(true);
+      }
     } catch (error) {
       console.error("Staff list processing failed:", error);
+      setDoctors([]);
+      setDoctorsError(true);
     }
   };
 
@@ -121,6 +134,11 @@ export default function NewAppointmentForm() {
               {/* SELECT FIELD: DOCTORS */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-3">Assigned Practitioner</label>
+                {doctorsError && (
+                  <p className="text-sm text-rose-600 mb-2">
+                    Couldn&apos;t load the doctor list. Check your database connection and refresh this page.
+                  </p>
+                )}
                 <div className="relative">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10"><Stethoscope size={18} /></div>
                   <select
@@ -128,11 +146,12 @@ export default function NewAppointmentForm() {
                     value={formData.doctorId}
                     onChange={handleChange}
                     required
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-500 appearance-none"
+                    disabled={doctorsError}
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-500 appearance-none disabled:bg-slate-50 disabled:text-slate-400"
                   >
                     <option value="">-- Choose Specialist --</option>
                     {doctors.map(d => (
-                      <option key={d.DOCTOR_ID} value={d.DOCTOR_ID}>{d.NAME}</option>
+                      <option key={d.ID} value={d.ID}>{d.NAME}</option>
                     ))}
                   </select>
                 </div>

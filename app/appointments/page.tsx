@@ -1,14 +1,32 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Trash2,
   CheckCircle,
   XCircle,
   CalendarDays,
-  Plus
+  Plus,
+  PieChart as PieIcon,
+  Activity,
+  Stethoscope,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts';
 import StatusBadge from "@/app/components/StatusBadge";
 
 type Appointment = {
@@ -19,8 +37,24 @@ type Appointment = {
   STATUS: string;
 };
 
+type StatusBreakdownRow = { STATUS_KEY: string; TOTAL: number };
+type DailyTrendRow = { DAY_KEY: string; DAY_LABEL: string; TOTAL: number };
+type DoctorAnalyticsRow = { DOCTOR_NAME: string; TOTAL_APPOINTMENTS: number };
+
+// Mirrors the palette used in StatusBadge so the donut segments read
+// consistently with the status pills shown in the table below.
+const STATUS_COLORS: Record<string, string> = {
+  PENDING: '#F59E0B',
+  COMPLETED: '#10B981',
+  CANCELLED: '#F43F5E',
+};
+const FALLBACK_STATUS_COLOR = '#94A3B8';
+
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [statusBreakdown, setStatusBreakdown] = useState<StatusBreakdownRow[]>([]);
+  const [dailyTrend, setDailyTrend] = useState<DailyTrendRow[]>([]);
+  const [doctorAnalytics, setDoctorAnalytics] = useState<DoctorAnalyticsRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,6 +66,9 @@ export default function AppointmentsPage() {
       const res = await fetch('/api/appointments');
       const data = await res.json();
       setAppointments(data.appointments || []);
+      setStatusBreakdown(data.statusBreakdown || []);
+      setDailyTrend(data.dailyTrend || []);
+      setDoctorAnalytics(data.analytics || []);
     } catch (error) {
       console.error("Failed fetching appointments:", error);
     } finally {
@@ -64,6 +101,40 @@ export default function AppointmentsPage() {
     }
   };
 
+  // Donut chart: appointments grouped by current status
+  const statusChartData = useMemo(() => {
+    return statusBreakdown
+      .filter((row) => Number(row.TOTAL) > 0)
+      .map((row) => ({
+        name: row.STATUS_KEY,
+        value: Number(row.TOTAL),
+      }));
+  }, [statusBreakdown]);
+
+  const totalStatusCount = useMemo(
+    () => statusChartData.reduce((sum, row) => sum + row.value, 0),
+    [statusChartData]
+  );
+
+  // Area chart: appointments booked per day over the last 14 days
+  const dailyChartData = useMemo(() => {
+    return dailyTrend.map((row) => ({
+      day: row.DAY_LABEL,
+      appointments: Number(row.TOTAL),
+    }));
+  }, [dailyTrend]);
+
+  // Horizontal bar chart: appointment volume per doctor, busiest first
+  const doctorChartData = useMemo(() => {
+    return doctorAnalytics
+      .map((row) => ({
+        doctor: row.DOCTOR_NAME,
+        appointments: Number(row.TOTAL_APPOINTMENTS),
+      }))
+      .sort((a, b) => b.appointments - a.appointments)
+      .slice(0, 8);
+  }, [doctorAnalytics]);
+
   return (
     <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
       
@@ -81,6 +152,124 @@ export default function AppointmentsPage() {
           New Appointment
         </Link>
       </div>
+
+      {/* ANALYTICS CHARTS GRID */}
+      {!loading && appointments.length > 0 && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+
+          {/* APPOINTMENTS BY STATUS — DONUT CHART */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <PieIcon className="text-emerald-600" size={20} />
+              <h3 className="text-xl font-bold text-slate-900">Status Distribution</h3>
+            </div>
+            <p className="text-slate-500 text-sm mb-4">Scheduled, completed, and cancelled split</p>
+            {statusChartData.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-16">No status data available yet.</p>
+            ) : (
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={statusChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={85}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      {statusChartData.map((entry, index) => (
+                        <Cell
+                          key={`status-cell-${index}`}
+                          fill={STATUS_COLORS[entry.name?.toUpperCase()] || FALLBACK_STATUS_COLOR}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: '12px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-x-0 top-[78px] text-center pointer-events-none">
+                  <p className="text-2xl font-bold text-slate-900">{totalStatusCount}</p>
+                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Total</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* APPOINTMENTS PER DAY — AREA CHART */}
+          <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2">
+                <Activity className="text-indigo-600" size={20} />
+                <h3 className="text-xl font-bold text-slate-900">Booking Volume</h3>
+              </div>
+            </div>
+            <p className="text-slate-500 text-sm mb-4">Appointments scheduled per day, last 14 days</p>
+            {dailyChartData.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-16">No recent booking activity to chart.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <AreaChart data={dailyChartData}>
+                  <defs>
+                    <linearGradient id="colorDailyAppointments" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                  <XAxis dataKey="day" stroke="#94A3B8" fontSize={12} tickLine={false} />
+                  <YAxis stroke="#94A3B8" fontSize={12} allowDecimals={false} />
+                  <Tooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="appointments"
+                    stroke="#6366F1"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorDailyAppointments)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          {/* APPOINTMENTS BY DOCTOR — HORIZONTAL BAR CHART */}
+          <div className="xl:col-span-3 bg-white rounded-3xl border border-slate-200 p-5 lg:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Stethoscope className="text-cyan-600" size={20} />
+              <h3 className="text-xl font-bold text-slate-900">Practitioner Load</h3>
+            </div>
+            <p className="text-slate-500 text-sm mb-4">Total appointments handled per doctor</p>
+            {doctorChartData.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-16">No doctor allocation data available.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={Math.max(220, doctorChartData.length * 48)}>
+                <BarChart
+                  data={doctorChartData}
+                  layout="vertical"
+                  margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
+                  <XAxis type="number" stroke="#94A3B8" fontSize={12} allowDecimals={false} />
+                  <YAxis
+                    type="category"
+                    dataKey="doctor"
+                    stroke="#94A3B8"
+                    fontSize={12}
+                    width={140}
+                    tickLine={false}
+                  />
+                  <Tooltip />
+                  <Bar dataKey="appointments" fill="#06B6D4" radius={[0, 8, 8, 0]} barSize={22} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+        </div>
+      )}
 
       {/* TABLE CONTAINER */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">

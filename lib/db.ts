@@ -1,51 +1,60 @@
-import oracledb from 'oracledb';
+import oracledb from "oracledb";
 
-// Tell the driver to return rows as JavaScript objects rather than arrays [value1, value2]
+// Return rows as objects
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 
-// Database connection configuration details
-const dbConfig = {
-  user: process.env.DB_USER || 'system',
-  password: process.env.DB_PASSWORD || 'YourPassword123', // Matches your docker run password
-  connectString: process.env.DB_CONNECT_STRING || 'localhost:1521/XEPDB1', // Direct to Pluggable DB
+// Database configuration
+const dbConfig: oracledb.ConnectionAttributes = {
+  user: process.env.DB_USER || "SYSTEM",
+  password: process.env.DB_PASSWORD || "viduranga",
+  connectString:
+    process.env.DB_CONNECT_STRING || "localhost:1521/XEPDB1",
 };
 
-/**
- * Utility function to execute SQL queries on the fresh Oracle container.
- * Automatically handles opening and closing connections to prevent leaks.
- * 
- * @param sql The SQL query string to execute
- * @param binds Optional bind variables to prevent SQL injection
- */
+export { pool };
+
 export async function executeQuery<T = any>(
-  sql: string, 
-  binds: oracledb.BindParameters = []
+  sql: string,
+  binds: oracledb.BindParameters = {}
 ): Promise<T[]> {
-  let connection;
+  let connection: oracledb.Connection | undefined;
 
   try {
-    // Open a fresh connection
-    connection = await oracledb.getConnection(dbConfig);
-    
-    // Execute the query
-    const result = await connection.execute(sql, binds, {
-      autoCommit: true // Automatically commit INSERTs/UPDATEs/DELETEs
+    console.log("🔗 Connecting to Oracle...");
+    console.log({
+      user: dbConfig.user,
+      connectString: dbConfig.connectString,
     });
 
-    // Return the query rows or an empty array if none
-    return (result.rows as T[]) || [];
+    connection = await oracledb.getConnection(dbConfig);
 
-  } catch (error) {
-    console.error('❌ Database query execution error:', error);
-    throw error;
+    console.log("✅ Oracle Connected");
+
+    const result = await connection.execute(sql, binds, {
+      autoCommit: true,
+    });
+
+    return (result.rows as T[]) || [];
+  } catch (error: any) {
+    console.error("❌ Oracle Error:");
+    console.error(error);
+
+    throw new Error(
+      error?.message || "Database connection/query failed"
+    );
   } finally {
-    // Crucial: Always close the connection when done so you don't exhaust pool limits
     if (connection) {
       try {
         await connection.close();
+        console.log("🔒 Oracle Connection Closed");
       } catch (closeError) {
-        console.error('Error closing database connection:', closeError);
+        console.error(
+          "❌ Error closing Oracle connection:",
+          closeError
+        );
       }
     }
   }
 }
+
+// Add this line at the bottom of your lib/db.ts

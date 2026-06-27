@@ -1,18 +1,17 @@
 'use client';
 
-import {
-  useEffect,
-  useMemo,
-  useState
-} from 'react';
-
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   Package,
   AlertTriangle,
-  ShieldAlert,
   Search,
   Boxes,
   Trash2,
+  Plus,
+  CheckCircle2,
+  Activity,
+  Archive
 } from 'lucide-react';
 
 type InventoryItem = {
@@ -23,635 +22,256 @@ type InventoryItem = {
   STATUS: string;
 };
 
+// Helper for dynamic product avatars
+const AVATAR_COLORS = [
+  'bg-blue-500', 'bg-indigo-500', 'bg-cyan-500', 
+  'bg-violet-500', 'bg-sky-500', 'bg-slate-700'
+];
+
 export default function InventoryPage() {
-
-  const [items, setItems] =
-    useState<InventoryItem[]>([]);
-
-  const [search, setSearch] =
-    useState('');
-
-  const [loading, setLoading] =
-    useState(true);
-
-
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchInventory();
   }, []);
 
-
-
-
-  const fetchInventory =
-    async () => {
-
+  const fetchInventory = async () => {
     try {
-
-      const res =
-        await fetch(
-          '/api/inventory'
-        );
-
-      const data =
-        await res.json();
-
-      setItems(
-        Array.isArray(data)
-          ? data
-          : []
-      );
-
+      const res = await fetch('/api/inventory');
+      const data = await res.json();
+      setItems(Array.isArray(data) ? data : []);
     } catch (error) {
-
       console.error(error);
-
     } finally {
-
       setLoading(false);
-
     }
   };
 
+  const filteredItems = useMemo(() => {
+    return items.filter((item) =>
+      item.ITEM_NAME?.toLowerCase().includes(search.toLowerCase()) ||
+      item.ITEM_ID?.toString().includes(search)
+    );
+  }, [items, search]);
 
+  const deleteItem = async (id: number, name: string) => {
+    const confirmDelete = confirm(`CRITICAL ACTION: Are you sure you want to permanently delete "${name}" from the inventory ledger?`);
+    if (!confirmDelete) return;
 
-  const filteredItems =
-    useMemo(() => {
+    try {
+      const res = await fetch(`/api/inventory/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Deletion rejected by server');
+      fetchInventory();
+    } catch (error) {
+      console.error(error);
+      alert('Failed to remove item from the database.');
+    }
+  };
 
-      return items.filter(
-        (item) =>
+  // Metric Calculations
+  const lowStockCount = items.filter(i => i.STATUS?.toUpperCase() === 'LOW STOCK').length;
+  const availableCount = items.filter(i => i.STATUS?.toUpperCase() === 'AVAILABLE' || i.STATUS?.toUpperCase() === 'IN STOCK').length;
 
-          item.ITEM_NAME
-            ?.toLowerCase()
-            .includes(
-              search.toLowerCase()
-            )
-
-      );
-
-    }, [items, search]);
-
-
-
-  const getStatusStyle =
-    (status: string) => {
-
-      switch (status) {
-
-        case 'LOW STOCK':
-          return
-          'bg-red-100 text-red-700';
-
-        default:
-          return
-          'bg-emerald-100 text-emerald-700';
-      }
-    };
-
-
+  const getAvatarColor = (name: string) => {
+    if (!name) return AVATAR_COLORS[0];
+    const charCode = name.charCodeAt(0) + (name.charCodeAt(name.length - 1) || 0);
+    return AVATAR_COLORS[charCode % AVATAR_COLORS.length];
+  };
 
   if (loading) {
-
     return (
-
-      <div
-        className="
-          min-h-screen
-          bg-slate-50
-          flex items-center justify-center
-        "
-      >
-
-        <div className="text-slate-600 text-lg font-medium">
-          Loading inventory...
+      <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-slate-400">
+          <div className="relative h-16 w-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="font-bold tracking-widest uppercase text-sm animate-pulse">Loading Catalog...</p>
         </div>
-
       </div>
     );
   }
 
-
-
   return (
-
-    <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
-
-      {/* TOP */}
-      <div
-        className="
-          bg-white
-          rounded-3xl
-          border border-slate-200
-          shadow-sm
-          overflow-hidden
-          mb-8
-        "
-      >
-
-        {/* HEADER */}
-        <div
-          className="
-            bg-white
-            border-b border-slate-200
-            px-8 py-7
-            relative
-          "
-        >
-
-          <div
-            className="
-              absolute
-              right-10 top-6
-              h-24 w-24
-              rounded-full
-              bg-emerald-50
-            "
-          ></div>
-
-          <div className="relative flex items-center gap-5">
-
-            <div
-              className="
-                h-16 w-16
-                rounded-2xl
-                bg-emerald-50
-                border border-emerald-100
-                flex items-center justify-center
-              "
-            >
-
-              <Boxes
-                className="text-emerald-600"
-                size={28}
-              />
-
-            </div>
-
-            <div>
-
-              <h2 className="text-3xl font-bold text-slate-900">
-                Inventory Management
-              </h2>
-
-              <p className="text-slate-500 mt-2 text-base">
-                Monitor hospital stock and supplies.
-              </p>
-
-            </div>
-
+    <div className="min-h-screen bg-slate-50/50 p-4 lg:p-8 font-sans">
+      
+      {/* ANALYTICS SUMMARY ROW */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        
+        {/* TOTAL ITEMS */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+          <div>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Total SKUs</p>
+            <h2 className="text-3xl font-black text-slate-900 mt-1">{items.length}</h2>
+            <p className="text-xs font-bold text-slate-500 mt-2 flex items-center gap-1"><Boxes size={14} /> Unique Products</p>
           </div>
-
+          <div className="h-14 w-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <Archive size={28} />
+          </div>
         </div>
 
+        {/* LOW STOCK ALERT */}
+        <div className={`bg-white rounded-3xl border p-6 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between ${lowStockCount > 0 ? 'border-rose-200 bg-rose-50/10' : 'border-slate-200'}`}>
+          <div>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Attention Required</p>
+            <h2 className={`text-3xl font-black mt-1 ${lowStockCount > 0 ? 'text-rose-600' : 'text-emerald-500'}`}>
+              {lowStockCount}
+            </h2>
+            <p className={`text-xs font-bold mt-2 flex items-center gap-1 ${lowStockCount > 0 ? 'text-rose-600' : 'text-emerald-500'}`}>
+              {lowStockCount > 0 ? <><AlertTriangle size={14} className="animate-pulse" /> Critical Stock Levels</> : <><CheckCircle2 size={14}/> Optimal Levels</>}
+            </p>
+          </div>
+          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${lowStockCount > 0 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-50 text-emerald-500'}`}>
+            <AlertTriangle size={28} />
+          </div>
+        </div>
 
+        {/* AVAILABLE ITEMS */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+          <div>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Healthy Stock</p>
+            <h2 className="text-3xl font-black text-emerald-600 mt-1">{availableCount}</h2>
+            <p className="text-xs font-bold text-emerald-600 mt-2 flex items-center gap-1"><Activity size={14} /> Ready for Deployment</p>
+          </div>
+          <div className="h-14 w-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <Package size={28} />
+          </div>
+        </div>
+      </div>
 
-        {/* SEARCH + STATS */}
-        <div className="p-6 lg:p-8">
+      {/* SEARCH & TABLE CONTAINER */}
+      <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        
+        {/* SEARCH BAR HEADER */}
+        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white z-10 relative">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
+              <Boxes size={20} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900">Inventory Ledger</h2>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{filteredItems.length} Records Found</p>
+            </div>
+          </div>
 
-          {/* SEARCH */}
-          <div className="relative mb-8">
-
-            <Search
-              size={18}
-              className="
-                absolute
-                left-4 top-1/2
-                -translate-y-1/2
-                text-slate-400
-              "
-            />
-
+          <div className="relative w-full sm:w-80">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+              <Search size={18} />
+            </div>
             <input
               type="text"
-              placeholder="Search inventory..."
+              placeholder="Search by Item Name or SKU..."
               value={search}
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
-              className="
-                w-full lg:w-[350px]
-                pl-11 pr-4 py-4
-                rounded-2xl
-                border border-slate-200
-                bg-white
-                outline-none
-                focus:ring-2
-                focus:ring-emerald-500
-              "
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 outline-none transition-all focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white placeholder:text-slate-400"
             />
-
           </div>
-
-
-
-          {/* STATS */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-            {/* TOTAL */}
-            <div
-              className="
-                rounded-3xl
-                border border-slate-200
-                bg-slate-50
-                p-6
-              "
-            >
-
-              <div className="flex items-center justify-between">
-
-                <div>
-
-                  <p className="text-sm text-slate-500">
-                    Total Items
-                  </p>
-
-                  <h2 className="text-4xl font-bold text-slate-900 mt-3">
-                    {items.length}
-                  </h2>
-
-                </div>
-
-                <div
-                  className="
-                    h-14 w-14
-                    rounded-2xl
-                    bg-emerald-100
-                    flex items-center justify-center
-                  "
-                >
-
-                  <Package
-                    className="text-emerald-600"
-                    size={24}
-                  />
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-
-            {/* LOW STOCK */}
-            <div
-              className="
-                rounded-3xl
-                border border-slate-200
-                bg-slate-50
-                p-6
-              "
-            >
-
-              <div className="flex items-center justify-between">
-
-                <div>
-
-                  <p className="text-sm text-slate-500">
-                    Low Stock
-                  </p>
-
-                  <h2 className="text-4xl font-bold text-red-600 mt-3">
-
-                    {
-                      items.filter(
-                        (i) =>
-                          i.STATUS ===
-                          'LOW STOCK'
-                      ).length
-                    }
-
-                  </h2>
-
-                </div>
-
-                <div
-                  className="
-                    h-14 w-14
-                    rounded-2xl
-                    bg-red-100
-                    flex items-center justify-center
-                  "
-                >
-
-                  <ShieldAlert
-                    className="text-red-600"
-                    size={24}
-                  />
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-
-            {/* AVAILABLE */}
-            <div
-              className="
-                rounded-3xl
-                border border-slate-200
-                bg-slate-50
-                p-6
-              "
-            >
-
-              <div className="flex items-center justify-between">
-
-                <div>
-
-                  <p className="text-sm text-slate-500">
-                    Available
-                  </p>
-
-                  <h2 className="text-4xl font-bold text-emerald-600 mt-3">
-
-                    {
-                      items.filter(
-                        (i) =>
-                          i.STATUS ===
-                          'AVAILABLE'
-                      ).length
-                    }
-
-                  </h2>
-
-                </div>
-
-                <div
-                  className="
-                    h-14 w-14
-                    rounded-2xl
-                    bg-emerald-100
-                    flex items-center justify-center
-                  "
-                >
-
-                  <AlertTriangle
-                    className="text-emerald-600"
-                    size={24}
-                  />
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
         </div>
 
-      </div>
-
-
-
-      {/* TABLE */}
-      <div
-        className="
-          bg-white
-          rounded-3xl
-          border border-slate-200
-          shadow-sm
-          overflow-hidden
-        "
-      >
-
-        {/* HEADER */}
-        <div
-          className="
-            flex items-center justify-between
-            p-6
-            border-b border-slate-200
-          "
-        >
-
-          <div>
-
-            <h2 className="text-2xl font-bold text-slate-900">
-              Inventory Records
-            </h2>
-
-            <p className="text-slate-500 mt-1">
-              Complete inventory stock
-            </p>
-
-          </div>
-
-          <div
-            className="
-              px-4 py-2
-              rounded-2xl
-              bg-emerald-100
-              text-emerald-700
-              text-sm
-              font-semibold
-            "
-          >
-            {filteredItems.length} Items
-          </div>
-
-        </div>
-
-
-
-        {/* TABLE */}
+        {/* DATA TABLE */}
         <div className="overflow-x-auto">
-
-          <table className="w-full">
-
-            <thead className="bg-slate-50">
-
+          <table className="w-full min-w-[800px] text-left border-collapse">
+            <thead className="bg-slate-50/50">
               <tr>
-
-                <th className="text-left p-5 text-sm font-semibold text-slate-600">
-                  Item
-                </th>
-
-                <th className="text-left p-5 text-sm font-semibold text-slate-600">
-                  Quantity
-                </th>
-
-                <th className="text-left p-5 text-sm font-semibold text-slate-600">
-                  Unit Price
-                </th>
-
-                <th className="text-left p-5 text-sm font-semibold text-slate-600">
-                  Status
-                </th>
-
-                <th className="text-left p-5 text-sm font-semibold text-slate-600">
-                  Actions
-                </th>
-
+                <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Item Details</th>
+                <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Quantity In Stock</th>
+                <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Unit Price</th>
+                <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Status</th>
+                <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
               </tr>
-
             </thead>
 
+            <tbody className="divide-y divide-slate-100">
+              {filteredItems.length > 0 ? (
+                filteredItems.map((item) => {
+                  const isLowStock = item.STATUS?.toUpperCase() === 'LOW STOCK';
 
+                  return (
+                    <tr key={item.ITEM_ID} className="hover:bg-slate-50/80 transition-colors group">
+                      
+                      {/* ITEM IDENTITY */}
+                      <td className="p-5">
+                        <div className="flex items-center gap-4">
+                          <div className={`h-12 w-12 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-sm ${getAvatarColor(item.ITEM_NAME)}`}>
+                            {item.ITEM_NAME?.charAt(0).toUpperCase() || 'P'}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
+                              {item.ITEM_NAME}
+                            </h3>
+                            <p className="text-xs font-semibold text-slate-400 mt-0.5 uppercase tracking-wider font-mono">
+                              SKU #{item.ITEM_ID}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
 
-            <tbody>
+                      {/* QUANTITY */}
+                      <td className="p-5">
+                        <span className={`text-lg font-black ${isLowStock ? 'text-rose-600' : 'text-slate-900'}`}>
+                          {item.QUANTITY}
+                        </span>
+                      </td>
 
-              {filteredItems.map(
-                (item) => (
+                      {/* UNIT PRICE */}
+                      <td className="p-5">
+                        <span className="font-bold text-slate-700 font-mono">
+                          Rs. {Number(item.UNIT_PRICE).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </td>
 
-                <tr
-                  key={item.ITEM_ID}
-                  className="
-                    border-t border-slate-100
-                    hover:bg-slate-50
-                    transition
-                  "
-                >
+                      {/* STATUS BADGE */}
+                      <td className="p-5">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
+                            isLowStock
+                              ? 'bg-rose-50 text-rose-700 border-rose-200 shadow-sm shadow-rose-100'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm shadow-emerald-100'
+                          }`}
+                        >
+                          {isLowStock && <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse"></span>}
+                          {item.STATUS}
+                        </span>
+                      </td>
 
-                  {/* ITEM */}
-                  <td className="p-5">
+                      {/* ACTIONS */}
+                      <td className="p-5 text-right">
+                        <button
+                          onClick={() => deleteItem(item.ITEM_ID, item.ITEM_NAME)}
+                          title="Purge Item from Catalog"
+                          className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-400 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 shadow-sm transition-all active:scale-95 ml-auto flex items-center justify-center"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
 
-                    <div className="flex items-center gap-4">
-
-                      <div
-                        className="
-                          h-12 w-12
-                          rounded-2xl
-                          bg-emerald-100
-                          flex items-center justify-center
-                          text-emerald-700
-                          font-bold
-                        "
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={5} className="text-center py-20">
+                    <div className="h-20 w-20 rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-center mx-auto mb-4">
+                      <Search className="text-slate-300" size={32} />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-900">No Inventory Found</h3>
+                    <p className="text-slate-500 mt-1 text-sm font-medium">Try adjusting your search query or add a new item.</p>
+                    {search && (
+                      <button 
+                        onClick={() => setSearch('')}
+                        className="mt-4 text-blue-600 font-bold text-sm hover:underline"
                       >
-                        {item.ITEM_NAME?.charAt(0)}
-                      </div>
-
-                      <div>
-
-                        <h3 className="font-semibold text-slate-900">
-                          {item.ITEM_NAME}
-                        </h3>
-
-                        <p className="text-sm text-slate-500">
-                          ID #{item.ITEM_ID}
-                        </p>
-
-                      </div>
-
-                    </div>
-
+                        Clear Search
+                      </button>
+                    )}
                   </td>
-
-
-
-                  {/* QUANTITY */}
-                  <td className="p-5">
-
-                    <div className="font-semibold text-slate-900">
-                      {item.QUANTITY}
-                    </div>
-
-                  </td>
-
-
-
-                  {/* PRICE */}
-                  <td className="p-5">
-
-                    <div className="font-semibold text-slate-900">
-                      Rs. {item.UNIT_PRICE}
-                    </div>
-
-                  </td>
-
-
-
-                  {/* STATUS */}
-                  <td className="p-5">
-
-                    <span
-                      className={`
-                        px-3 py-1
-                        rounded-full
-                        text-xs font-semibold
-                        ${getStatusStyle(
-                          item.STATUS
-                        )}
-                      `}
-                    >
-                      {item.STATUS}
-                    </span>
-
-                  </td>
-
-
-
-                  {/* ACTIONS */}
-                  <td className="p-5">
-
-                    <button
-                      onClick={async () => {
-
-                        const confirmDelete =
-                          confirm(
-                            'Delete inventory item?'
-                          );
-
-                        if (!confirmDelete)
-                          return;
-
-                        try {
-
-                          await fetch(
-                            `/api/inventory/${item.ITEM_ID}`,
-                            {
-                              method:
-                                'DELETE',
-                            }
-                          );
-
-                          fetchInventory();
-
-                        } catch (error) {
-
-                          console.error(
-                            error
-                          );
-
-                        }
-                      }}
-                      className="
-                        flex items-center gap-2
-                        px-4 py-2
-                        rounded-xl
-                        bg-red-100
-                        text-red-700
-                        hover:bg-red-200
-                        transition
-                      "
-                    >
-
-                      <Trash2
-                        size={16}
-                      />
-
-                      Delete
-
-                    </button>
-
-                  </td>
-
                 </tr>
-
-              ))}
-
+              )}
             </tbody>
-
           </table>
-
         </div>
-
       </div>
-
     </div>
   );
 }

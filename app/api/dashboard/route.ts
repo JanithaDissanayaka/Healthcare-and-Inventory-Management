@@ -3,74 +3,134 @@ import { executeQuery } from "@/lib/db";
 
 export async function GET() {
   try {
-    // Basic summary counters
-    const pCount = await executeQuery("SELECT COUNT(*) AS TOTAL FROM patients");
-    const dCount = await executeQuery("SELECT COUNT(*) AS TOTAL FROM doctors");
-    const aCount = await executeQuery("SELECT COUNT(*) AS TOTAL FROM appointments");
-    const rCount = await executeQuery("SELECT NVL(SUM(total_amount), 0) AS TOTAL FROM billing");
+    // 1. COMBINED SUMMARY COUNTS (Using Scalar Subqueries)
+    // Consolidates 4 separate DB calls into a single call using the DUAL table
+    const summaryQuery = `
+      SELECT 
+        (SELECT COUNT(*) FROM patients) AS total_patients,
+        (SELECT COUNT(*) FROM doctors) AS total_doctors,
+        (SELECT COUNT(*) FROM appointments) AS total_appointments,
+        (SELECT NVL(SUM(total_amount), 0) FROM billing) AS total_revenue
+      FROM DUAL
+    `;
 
-    // Lists
-    const latestPatients = await executeQuery(`
-      SELECT patient_id, name, phone FROM patients ORDER BY patient_id DESC FETCH FIRST 5 ROWS ONLY
-    `);
-    const latestDoctors = await executeQuery(`
-      SELECT doctor_id, name, specialization FROM doctors ORDER BY doctor_id DESC FETCH FIRST 5 ROWS ONLY
-    `);
+    // 2. LATEST PATIENTS (Using Advanced Window Functions / Inline Views)
+    const latestPatientsQuery = `
+      SELECT patient_id, name, phone FROM (
+        SELECT patient_id, name, phone, ROW_NUMBER() OVER (ORDER BY patient_id DESC) as rn
+        FROM patients
+      ) WHERE rn <= 5
+    `;
 
-    // 1. Monthly Patient Registrations Trend
-    const monthlyPatients = await executeQuery(`
-      SELECT TO_CHAR(created_at, 'MON') AS MONTH, COUNT(*) AS PATIENTS, MIN(created_at) AS sort_key
-      FROM patients GROUP BY TO_CHAR(created_at, 'MON') ORDER BY sort_key ASC
-    `);
+    // 3. LATEST DOCTORS (Using Advanced Window Functions / Inline Views)
+    const latestDoctorsQuery = `
+      SELECT doctor_id, name, specialization FROM (
+        SELECT doctor_id, name, specialization, ROW_NUMBER() OVER (ORDER BY doctor_id DESC) as rn
+        FROM doctors
+      ) WHERE rn <= 5
+    `;
 
-    // 2. NEW: Doctor Workload Allocation
-    const doctorWorkload = await executeQuery(`
-      SELECT d.name AS DOCTOR, COUNT(a.appointment_id) AS APPOINTMENTS
+    // 4. MONTHLY TREND (Using CTE / "WITH" Clause as an Inline View)
+    // Cleaner grouping logic using TRUNC to ensure accurate chronological sorting
+    const monthlyTrendQuery = `
+      WITH AppointmentMonths AS (
+        SELECT 
+          TO_CHAR(appointment_date, 'MON') AS month_name, 
+          TRUNC(appointment_date, 'MM') AS sort_date
+        FROM appointments 
+        WHERE appointment_date IS NOT NULL
+      )
+      SELECT month_name AS MONTH, COUNT(*) AS METRIC_COUNT
+      FROM AppointmentMonths
+      GROUP BY month_name, sort_date
+      ORDER BY sort_date ASC
+    `;
+
+    // 5. DOCTOR WORKLOAD (Using CTE / Subquery Factoring)
+    // Aggregating appointments BEFORE joining is vastly more performant on large datasets
+    const doctorWorkloadQuery = `
+      WITH WorkloadSummary AS (
+        SELECT doctor_id, COUNT(appointment_id) AS appt_count
+        FROM appointments
+        GROUP BY doctor_id
+      )
+      SELECT d.name AS DOCTOR, NVL(w.appt_count, 0) AS APPOINTMENTS
       FROM doctors d
-      LEFT JOIN appointments a ON d.doctor_id = a.doctor_id
-      GROUP BY d.name
+      LEFT JOIN WorkloadSummary w ON d.doctor_id = w.doctor_id
       ORDER BY APPOINTMENTS DESC
       FETCH FIRST 5 ROWS ONLY
-    `);
+    `;
 
-    // 3. NEW: Inventory Categorization Levels
-    const stockDistribution = await executeQuery(`
-      SELECT 
-        CASE WHEN quantity < 20 THEN 'LOW STOCK' ELSE 'AVAILABLE' END AS CATEGORY,
-        COUNT(*) AS ITEM_COUNT
-      FROM inventory
-      GROUP BY CASE WHEN quantity < 20 THEN 'LOW STOCK' ELSE 'AVAILABLE' END
-    `);
+    // 6. INVENTORY CATEGORIZATION (Using CTE for the CASE logic)
+    const stockDistributionQuery = `
+      WITH InventoryStatus AS (
+        SELECT CASE WHEN quantity < 20 THEN 'LOW STOCK' ELSE 'AVAILABLE' END AS CATEGORY
+        FROM inventory
+      )
+      SELECT CATEGORY, COUNT(*) AS ITEM_COUNT
+      FROM InventoryStatus
+      GROUP BY CATEGORY
+    `;
 
-    // 4. NEW: Revenue Financial Status Breakdown
-    const revenueBreakdown = await executeQuery(`
+    // 7. REVENUE BREAKDOWN
+    const revenueBreakdownQuery = `
       SELECT status AS STATUS_KEY, SUM(total_amount) AS SUM_AMOUNT
       FROM billing
       GROUP BY status
-    `);
+    `;
 
-    return NextResponse.json({
-      totalPatients: pCount[0]?.TOTAL || 0,
-      totalDoctors: dCount[0]?.TOTAL || 0,
-      totalAppointments: aCount[0]?.TOTAL || 0,
-      totalRevenue: Number(rCount[0]?.TOTAL || 0),
+    // ==========================================
+    // PARALLEL EXECUTION (Performance Boost)
+    // ==========================================
+    const [
+      summaryData,
       latestPatients,
       latestDoctors,
-      monthlyPatients: monthlyPatients.map((item: any) => ({
-        month: item.MONTH,
-        patients: Number(item.PATIENTS),
+      monthlyTrend,
+      doctorWorkload,
+      stockDistribution,
+      revenueBreakdown
+    ] = await Promise.all([
+      executeQuery(summaryQuery),
+      executeQuery(latestPatientsQuery),
+      executeQuery(latestDoctorsQuery),
+      executeQuery(monthlyTrendQuery),
+      executeQuery(doctorWorkloadQuery),
+      executeQuery(stockDistributionQuery),
+      executeQuery(revenueBreakdownQuery)
+    ]);
+
+    // Extract scalar values from the combined summary query result
+    // Note: Oracle returns column names in uppercase by default
+    const totals = summaryData[0] || {};
+
+    return NextResponse.json({
+      totalPatients: totals.TOTAL_PATIENTS || 0,
+      totalDoctors: totals.TOTAL_DOCTORS || 0,
+      totalAppointments: totals.TOTAL_APPOINTMENTS || 0,
+      totalRevenue: Number(totals.TOTAL_REVENUE || 0),
+      
+      latestPatients,
+      latestDoctors,
+      
+      monthlyPatients: monthlyTrend.map((item: any) => ({
+        month: item.MONTH || item.month,
+        patients: Number(item.METRIC_COUNT || item.metric_count), 
       })),
+      
       doctorWorkload: doctorWorkload.map((w: any) => ({
-        doctor: w.DOCTOR,
-        appointments: Number(w.APPOINTMENTS)
+        doctor: w.DOCTOR || w.doctor,
+        appointments: Number(w.APPOINTMENTS || w.appointments)
       })),
+      
       stockData: stockDistribution.map((s: any) => ({
-        name: s.CATEGORY,
-        value: Number(s.ITEM_COUNT)
+        name: s.CATEGORY || s.category,
+        value: Number(s.ITEM_COUNT || s.item_count)
       })),
+      
       revenueStatus: revenueBreakdown.map((r: any) => ({
-        status: r.STATUS_KEY,
-        amount: Number(r.SUM_AMOUNT)
+        status: r.STATUS_KEY || r.status_key,
+        amount: Number(r.SUM_AMOUNT || r.sum_amount)
       }))
     });
 
